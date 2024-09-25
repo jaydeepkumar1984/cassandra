@@ -197,7 +197,7 @@ public class UnrepairedBytesBasedTokenRangeSplitter implements IAutoRepairTokenR
                     long targetRanges = approximateUnrepairedBytesForRange / subrangeBytes;
                     // TODO: approximation per range, this is a bit lossy since targetRanges rounds down.
                     long approximateBytesPerSplit = approximateUnrepairedBytesForRange / targetRanges;
-                    logger.info("Splitting {}.{} for range {} into {} sub ranges, approximateBytesPerSplit={}", keyspaceName, tableName, tokenRange, targetRanges, approximateBytesPerSplit);
+                    logger.info("Splitting {}.{} for range {} into {} sub ranges, approximateBytesPerSplit={}", keyspaceName, tableName, tokenRange, targetRanges, FileUtils.stringifyFileSize(approximateBytesPerSplit));
                     List<Range<Token>> splitRanges = splitEvenly(tokenRange, (int) targetRanges);
                     int splitRangeCount = 0;
                     for (Range<Token> splitRange : splitRanges)
@@ -208,7 +208,7 @@ public class UnrepairedBytesBasedTokenRangeSplitter implements IAutoRepairTokenR
                             return repairAssignments;
                         }
                         logger.info("Added repair assignment for {}.{} for subrange {} (#{}/{}) with approximateBytes={}",
-                                    keyspaceName, tableName, splitRange, ++splitRangeCount, splitRanges.size(), approximateBytesPerSplit);
+                                    keyspaceName, tableName, splitRange, ++splitRangeCount, splitRanges.size(), FileUtils.stringifyFileSize(approximateBytesPerSplit));
                         repairAssignments.add(assignment);
                         targetBytesSoFar += approximateBytesPerSplit;
                     }
