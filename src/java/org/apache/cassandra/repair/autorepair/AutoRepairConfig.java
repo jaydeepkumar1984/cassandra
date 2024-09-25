@@ -20,6 +20,7 @@ package org.apache.cassandra.repair.autorepair;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,6 +33,7 @@ import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.DurationSpec;
+import org.apache.cassandra.config.ParameterizedClass;
 import org.apache.cassandra.exceptions.ConfigurationException;
 
 public class AutoRepairConfig implements Serializable
@@ -59,7 +61,8 @@ public class AutoRepairConfig implements Serializable
     public enum RepairType implements Serializable
     {
         full,
-        incremental;
+        incremental,
+        preview_repaired;
 
         public static AutoRepairState getAutoRepairState(RepairType repairType)
         {
@@ -69,6 +72,8 @@ public class AutoRepairConfig implements Serializable
                     return new FullRepairState();
                 case incremental:
                     return new IncrementalRepairState();
+                case preview_repaired:
+                    return new PreviewRepairedState();
             }
 
             throw new IllegalArgumentException("Invalid repair type: " + repairType);
@@ -280,7 +285,7 @@ public class AutoRepairConfig implements Serializable
         return applyOverrides(repairType, opt -> opt.force_repair_new_node);
     }
 
-    public String getTokenRangeSplitter(RepairType repairType)
+    public ParameterizedClass getTokenRangeSplitter(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.token_range_splitter);
     }
@@ -340,7 +345,7 @@ public class AutoRepairConfig implements Serializable
             opts.force_repair_new_node = false;
             opts.table_max_repair_time = new DurationSpec.IntSecondsBound("6h");
             opts.mv_repair_enabled = false;
-            opts.token_range_splitter = DefaultAutoRepairTokenSplitter.class.getName();
+            opts.token_range_splitter = new ParameterizedClass(DefaultAutoRepairTokenSplitter.class.getName(), Collections.emptyMap());
             opts.initial_scheduler_delay = new DurationSpec.IntSecondsBound("15m"); // 15 minutes
             opts.repair_session_timeout = new DurationSpec.IntSecondsBound("3h"); // 3 hours
 
@@ -404,9 +409,9 @@ public class AutoRepairConfig implements Serializable
         // the default is 'true'.
         // This flag determines whether the auto-repair framework needs to run anti-entropy, a.k.a, repair on the MV table or not.
         public volatile Boolean mv_repair_enabled;
-        // the default is DefaultAutoRepairTokenSplitter.class.getName(). The class should implement IAutoRepairTokenRangeSplitter.
+        // the default is DefaultAutoRepairTokenSplitter. The class should implement IAutoRepairTokenRangeSplitter.
         // The default implementation splits the tokens based on the token ranges owned by this node divided by the number of 'number_of_subranges'
-        public volatile String token_range_splitter;
+        public volatile ParameterizedClass token_range_splitter;
         // the minimum delay after a node starts before the scheduler starts running repair
         public volatile DurationSpec.IntSecondsBound initial_scheduler_delay;
         // repair session timeout - this is applicable for each repair session

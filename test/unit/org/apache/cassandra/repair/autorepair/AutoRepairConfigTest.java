@@ -20,6 +20,10 @@ package org.apache.cassandra.repair.autorepair;
 
 import java.util.EnumMap;
 import java.util.Objects;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -30,7 +34,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.config.DataStorageSpec;
 import org.apache.cassandra.config.DurationSpec;
+import org.apache.cassandra.config.ParameterizedClass;
 import org.apache.cassandra.cql3.CQLTester;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig.Options;
@@ -440,14 +446,24 @@ public class AutoRepairConfigTest extends CQLTester
     {
         Options defaultOptions = Options.getDefaultOptions();
 
-        assertEquals(DefaultAutoRepairTokenSplitter.class.getName(),defaultOptions.token_range_splitter);
+        ParameterizedClass expectedDefault = new ParameterizedClass(DefaultAutoRepairTokenSplitter.class.getName(), Collections.emptyMap());
+
+        assertEquals(expectedDefault, defaultOptions.token_range_splitter);
         assertEquals(DefaultAutoRepairTokenSplitter.class.getName(), FBUtilities.newAutoRepairTokenRangeSplitter(defaultOptions.token_range_splitter).getClass().getName());
+    }
+
+    @Test
+    public void testTokenRangeSplitterAcceptingMap()
+    {
+        Map<String, String> splitterOptions = new HashMap<>();
+        splitterOptions.put("unrepaired_bytes_per_split", "1MiB");
+        config.global_settings.token_range_splitter = new ParameterizedClass(UnrepairedBytesBasedTokenRangeSplitter.class.getName(), splitterOptions);
     }
 
     @Test(expected = ConfigurationException.class)
     public void testInvalidTokenRangeSplitter()
     {
-        assertEquals(DefaultAutoRepairTokenSplitter.class.getName(), FBUtilities.newAutoRepairTokenRangeSplitter("invalid-class").getClass().getName());
+        FBUtilities.newAutoRepairTokenRangeSplitter(new ParameterizedClass("invalid-class", Collections.emptyMap()));
     }
 
     @Test
