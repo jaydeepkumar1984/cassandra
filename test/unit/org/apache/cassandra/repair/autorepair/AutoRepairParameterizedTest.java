@@ -21,6 +21,7 @@ package org.apache.cassandra.repair.autorepair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -35,6 +36,7 @@ import org.apache.cassandra.cql3.statements.schema.TableAttributes;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.repair.RepairRunnable;
+import org.apache.cassandra.repair.autorepair.IAutoRepairTokenRangeSplitter.RepairAssignment;
 import org.apache.cassandra.schema.AutoRepairParams;
 import org.apache.cassandra.schema.TableParams;
 import org.apache.cassandra.service.StorageService;
@@ -539,13 +541,12 @@ public class AutoRepairParameterizedTest extends CQLTester
     {
         Collection<Range<Token>> tokens = StorageService.instance.getPrimaryRanges(KEYSPACE);
         assertEquals(1, tokens.size());
-        List<Range<Token>> expectedToken = new ArrayList<>();
-        expectedToken.addAll(tokens);
+        List<Range<Token>> expectedToken = new ArrayList<>(tokens);
 
-        List<Pair<Token, Token>> ranges = new DefaultAutoRepairTokenSplitter().getRange(repairType, true, KEYSPACE, TABLE);
-        assertEquals(1, ranges.size());
-        assertEquals(expectedToken.get(0).left, ranges.get(0).left);
-        assertEquals(expectedToken.get(0).right, ranges.get(0).right);
+        List<RepairAssignment> assignments = new DefaultAutoRepairTokenSplitter().getRepairAssignments(repairType, true, KEYSPACE, Collections.singleton(TABLE));
+        assertEquals(1, assignments.size());
+        assertEquals(expectedToken.get(0).left, assignments.get(0).getTokenRange().left);
+        assertEquals(expectedToken.get(0).right, assignments.get(0).getTokenRange().right);
     }
 
     @Test
@@ -553,13 +554,13 @@ public class AutoRepairParameterizedTest extends CQLTester
     {
         Collection<Range<Token>> tokens = StorageService.instance.getPrimaryRanges(KEYSPACE);
         assertEquals(1, tokens.size());
-        List<Range<Token>> expectedToken = new ArrayList<>();
-        expectedToken.addAll(tokens);
+        // TODO: validate the tokens
+        List<Range<Token>> expectedToken = new ArrayList<>(tokens);
 
         AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
         config.setRepairSubRangeNum(repairType, 4);
-        List<Pair<Token, Token>> ranges = new DefaultAutoRepairTokenSplitter().getRange(repairType, true, KEYSPACE, TABLE);
-        assertEquals(4, ranges.size());
+        List<RepairAssignment> assignments = new DefaultAutoRepairTokenSplitter().getRepairAssignments(repairType, true, KEYSPACE, Collections.singleton(TABLE));
+        assertEquals(4, assignments.size());
     }
 
     @Test

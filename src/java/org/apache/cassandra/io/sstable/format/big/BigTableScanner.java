@@ -117,7 +117,7 @@ public class BigTableScanner implements ISSTableScanner
         this.listener = listener;
     }
 
-    private static List<AbstractBounds<PartitionPosition>> makeBounds(SSTableReader sstable, Collection<Range<Token>> tokenRanges)
+    public static List<AbstractBounds<PartitionPosition>> makeBounds(SSTableReader sstable, Collection<Range<Token>> tokenRanges)
     {
         List<AbstractBounds<PartitionPosition>> boundsList = new ArrayList<>(tokenRanges.size());
         for (Range<Token> range : Range.normalize(tokenRanges))
@@ -208,6 +208,48 @@ public class BigTableScanner implements ISSTableScanner
             throw new CorruptSSTableException(e, sstable.getFilename());
         }
     }
+
+    /**
+     * Gets the position in the data file, but does not seek to it.  This does seek the index to find the data position
+     * but does not actually seek the data file.
+     * @param position position to find in data file.
+     * @return
+     * @throws CorruptSSTableException
+     */
+    public long getDataPosition(PartitionPosition position) throws CorruptSSTableException {
+
+        long indexPosition = sstable.getIndexScanPosition(position);
+        ifile.seek(indexPosition);
+        try
+        {
+
+            while (!ifile.isEOF())
+            {
+                indexPosition = ifile.getFilePointer();
+                DecoratedKey indexDecoratedKey = sstable.decorateKey(ByteBufferUtil.readWithShortLength(ifile));
+                if (indexDecoratedKey.compareTo(position) > 0)
+                {
+                    // Found, just read the dataPosition and seek into index and data files
+                    long dataPosition = RowIndexEntry.Serializer.readPosition(ifile);
+                    // seek the index file position as we will presumably seek further when goign to the next position.
+                    ifile.seek(indexPosition);
+                    return dataPosition;
+                }
+                else
+                {
+                    RowIndexEntry.Serializer.skip(ifile, sstable.descriptor.version);
+                }
+            }
+        }
+        catch (IOException e)
+        {
+            sstable.markSuspect();
+            throw new CorruptSSTableException(e, sstable.getFilename());
+        }
+        // If for whatever reason we don't find position in file, just return 0
+        return 0L;
+    }
+
 
     public void close()
     {
