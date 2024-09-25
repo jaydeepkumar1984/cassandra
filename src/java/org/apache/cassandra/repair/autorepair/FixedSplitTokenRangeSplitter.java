@@ -28,13 +28,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.AutoRepairService;
 
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.tcm.compatibility.TokenRingUtils;
-import org.apache.cassandra.utils.FBUtilities;
 
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.split;
 
@@ -79,31 +77,33 @@ public class FixedSplitTokenRangeSplitter implements IAutoRepairTokenRangeSplitt
     }
 
     @Override
-    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans)
+    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, InetAddressAndPort ep)
     {
         return new RepairAssignmentIterator(repairPlans)
         {
             @Override
             protected KeyspaceRepairAssignments next(int priority, KeyspaceRepairPlan repairPlan)
             {
-                return getRepairAssignmentsForKeyspace(primaryRangeOnly, priority, repairPlan);
+                return getRepairAssignmentsForKeyspace(primaryRangeOnly, priority, repairPlan, ep);
             }
         };
     }
 
-    private KeyspaceRepairAssignments getRepairAssignmentsForKeyspace(boolean primaryRangeOnly, int priority, KeyspaceRepairPlan repairPlan)
+    private KeyspaceRepairAssignments getRepairAssignmentsForKeyspace(boolean primaryRangeOnly, int priority, KeyspaceRepairPlan repairPlan, InetAddressAndPort ep)
     {
         AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
         List<RepairAssignment> repairAssignments = new ArrayList<>();
         String keyspaceName = repairPlan.getKeyspaceName();
         List<String> tableNames = repairPlan.getTableNames();
 
-        Collection<Range<Token>> tokens = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, FBUtilities.getBroadcastAddressAndPort());
-        if (!primaryRangeOnly)
-        {
-            // if we need to repair non-primary token ranges, then change the tokens accordingly
-            tokens = StorageService.instance.getLocalReplicas(keyspaceName).onlyFull().ranges();
-        }
+//        Collection<Range<Token>> tokens1 = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, FBUtilities.getBroadcastAddressAndPort());
+//        if (!primaryRangeOnly)
+//        {
+//            // if we need to repair non-primary token ranges, then change the tokens accordingly
+//            tokens = StorageService.instance.getLocalReplicas(keyspaceName).onlyFull().ranges();
+//            tokens = StorageService.instance.getLocalRanges(keyspaceName);
+//        }
+        Collection<Range<Token>> tokens = AutoRepair.repairTokenCalculatorForEndpoint(primaryRangeOnly, keyspaceName, ep);
 
         boolean byKeyspace = config.getRepairByKeyspace(repairType);
         // collect all token ranges.

@@ -37,6 +37,7 @@ import org.apache.cassandra.index.sai.disk.format.Version;
 import org.apache.cassandra.service.AutoRepairService;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.tcm.ClusterMetadata;
+import org.apache.cassandra.utils.FBUtilities;
 
 import static org.apache.cassandra.config.CassandraRelevantProperties.SYSTEM_DISTRIBUTED_DEFAULT_RF;
 import static org.apache.cassandra.cql3.CQLTester.Fuzzed.setupSeed;
@@ -93,7 +94,7 @@ public class FixedSplitTokenRangeSplitterHelper
         List<PrioritizedRepairPlan> plan = PrioritizedRepairPlan.buildSingleKeyspacePlan(repairType, KEYSPACE, TABLE1, TABLE2, TABLE3);
 
         Iterator<KeyspaceRepairAssignments> keyspaceAssignments = new FixedSplitTokenRangeSplitter(repairType, Collections.singletonMap(FixedSplitTokenRangeSplitter.NUMBER_OF_SUBRANGES, Integer.toString(numberOfSubRanges)))
-                                                                  .getRepairAssignments(true, plan);
+                                                                  .getRepairAssignments(true, plan, FBUtilities.getBroadcastAddressAndPort());
 
         // should be only 1 entry for the keyspace.
         assertTrue(keyspaceAssignments.hasNext());
@@ -134,7 +135,7 @@ public class FixedSplitTokenRangeSplitterHelper
         List<PrioritizedRepairPlan> plan = PrioritizedRepairPlan.buildSingleKeyspacePlan(repairType, KEYSPACE, TABLE1, TABLE2, TABLE3);
 
         Iterator<KeyspaceRepairAssignments> keyspaceAssignments = new FixedSplitTokenRangeSplitter(repairType, Collections.singletonMap(FixedSplitTokenRangeSplitter.NUMBER_OF_SUBRANGES, Integer.toString(numberOfSubRanges)))
-                                                                  .getRepairAssignments(true, plan);
+                                                                  .getRepairAssignments(true, plan, FBUtilities.getBroadcastAddressAndPort());
 
         // should be only 1 entry for the keyspace.
         assertTrue(keyspaceAssignments.hasNext());
@@ -163,7 +164,7 @@ public class FixedSplitTokenRangeSplitterHelper
 
         List<PrioritizedRepairPlan> plan = PrioritizedRepairPlan.buildSingleKeyspacePlan(repairType, KEYSPACE, TABLE1);
 
-        Iterator<KeyspaceRepairAssignments> keyspaceAssignments = new FixedSplitTokenRangeSplitter(repairType, Collections.emptyMap()).getRepairAssignments(true, plan);
+        Iterator<KeyspaceRepairAssignments> keyspaceAssignments = new FixedSplitTokenRangeSplitter(repairType, Collections.emptyMap()).getRepairAssignments(true, plan, FBUtilities.getBroadcastAddressAndPort());
 
         // should be only 1 entry for the keyspace.
         assertTrue(keyspaceAssignments.hasNext());

@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.tcm.compatibility.TokenRingUtils;
 import org.apache.cassandra.utils.FBUtilities;
 import org.slf4j.Logger;
@@ -201,9 +202,9 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
     }
 
     @Override
-    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans)
+    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, InetAddressAndPort ep)
     {
-        return new BytesBasedRepairAssignmentIterator(primaryRangeOnly, repairPlans);
+        return new BytesBasedRepairAssignmentIterator(primaryRangeOnly, repairPlans, ep);
     }
 
     /**
@@ -215,10 +216,13 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
         private final boolean primaryRangeOnly;
         private long bytesSoFar = 0;
 
-        BytesBasedRepairAssignmentIterator(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans)
+        private InetAddressAndPort ep;
+
+        BytesBasedRepairAssignmentIterator(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, InetAddressAndPort ep)
         {
             super(repairPlans);
             this.primaryRangeOnly = primaryRangeOnly;
+            this.ep = ep;
         }
 
         @Override
@@ -232,7 +236,7 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
                 return new KeyspaceRepairAssignments(priority, repairPlan.getKeyspaceName(), Collections.emptyList());
             }
 
-            List<Range<Token>> tokenRanges = getTokenRanges(primaryRangeOnly, repairPlan.getKeyspaceName());
+            List<Range<Token>> tokenRanges = AutoRepair.repairTokenCalculatorForEndpoint(primaryRangeOnly, repairPlan.getKeyspaceName(), ep).stream().collect(Collectors.toList());
             // shuffle token ranges to unbias selection of ranges
             Collections.shuffle(tokenRanges);
             List<SizedRepairAssignment> repairAssignments = new ArrayList<>();

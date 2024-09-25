@@ -49,6 +49,7 @@ import org.apache.cassandra.repair.autorepair.RepairTokenRangeSplitter.FilteredR
 import org.apache.cassandra.repair.autorepair.RepairTokenRangeSplitter.SizeEstimate;
 import org.apache.cassandra.repair.autorepair.RepairTokenRangeSplitter.SizedRepairAssignment;
 import org.apache.cassandra.service.AutoRepairService;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.utils.concurrent.Refs;
 
 import static org.apache.cassandra.repair.autorepair.RepairTokenRangeSplitter.MAX_BYTES_PER_SCHEDULE;
@@ -338,7 +339,7 @@ public class RepairTokenRangeSplitterTest extends CQLTester
         final KeyspaceRepairPlan repairPlan = new KeyspaceRepairPlan("system_auth", new ArrayList<>(AuthKeyspace.TABLE_NAMES));
         final PrioritizedRepairPlan prioritizedRepairPlan = new PrioritizedRepairPlan(0, List.of(repairPlan));
 
-        Iterator<KeyspaceRepairAssignments> keyspaceAssignments = repairRangeSplitter.getRepairAssignments(true, List.of(prioritizedRepairPlan));
+        Iterator<KeyspaceRepairAssignments> keyspaceAssignments = repairRangeSplitter.getRepairAssignments(true, List.of(prioritizedRepairPlan), FBUtilities.getBroadcastAddressAndPort());
 
         // should be only 1 entry for the keyspace.
         assertTrue(keyspaceAssignments.hasNext());
@@ -366,7 +367,7 @@ public class RepairTokenRangeSplitterTest extends CQLTester
         final KeyspaceRepairPlan repairPlan = new KeyspaceRepairPlan("system_auth", new ArrayList<>(AuthKeyspace.TABLE_NAMES));
         final PrioritizedRepairPlan prioritizedRepairPlan = new PrioritizedRepairPlan(0, List.of(repairPlan));
 
-        Iterator<KeyspaceRepairAssignments> keyspaceAssignments = repairRangeSplitter.getRepairAssignments(true, List.of(prioritizedRepairPlan));
+        Iterator<KeyspaceRepairAssignments> keyspaceAssignments = repairRangeSplitter.getRepairAssignments(true, List.of(prioritizedRepairPlan), FBUtilities.getBroadcastAddressAndPort());
 
         // should be only 1 entry for the keyspace.
         assertTrue(keyspaceAssignments.hasNext());
