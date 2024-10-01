@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.utils.AbstractIterator;
 
@@ -177,47 +179,11 @@ public class BigTableScanner implements ISSTableScanner
         }
     }
 
-    private void seekToCurrentRangeStart()
+    // Helper method to seek to the index for the given position or range and optionally in the data file
+    private long seekAndProcess(@Nullable PartitionPosition position,
+                                @Nullable AbstractBounds<PartitionPosition> range,
+                                boolean seekDataFile) throws CorruptSSTableException
     {
-        long indexPosition = sstable.getIndexScanPosition(currentRange.left);
-        ifile.seek(indexPosition);
-        try
-        {
-
-            while (!ifile.isEOF())
-            {
-                indexPosition = ifile.getFilePointer();
-                DecoratedKey indexDecoratedKey = sstable.decorateKey(ByteBufferUtil.readWithShortLength(ifile));
-                if (indexDecoratedKey.compareTo(currentRange.left) > 0 || currentRange.contains(indexDecoratedKey))
-                {
-                    // Found, just read the dataPosition and seek into index and data files
-                    long dataPosition = RowIndexEntry.Serializer.readPosition(ifile);
-                    ifile.seek(indexPosition);
-                    dfile.seek(dataPosition);
-                    break;
-                }
-                else
-                {
-                    RowIndexEntry.Serializer.skip(ifile, sstable.descriptor.version);
-                }
-            }
-        }
-        catch (IOException e)
-        {
-            sstable.markSuspect();
-            throw new CorruptSSTableException(e, sstable.getFilename());
-        }
-    }
-
-    /**
-     * Gets the position in the data file, but does not seek to it.  This does seek the index to find the data position
-     * but does not actually seek the data file.
-     * @param position position to find in data file.
-     * @return
-     * @throws CorruptSSTableException
-     */
-    public long getDataPosition(PartitionPosition position) throws CorruptSSTableException {
-
         long indexPosition = sstable.getIndexScanPosition(position);
         ifile.seek(indexPosition);
         try
@@ -227,12 +193,20 @@ public class BigTableScanner implements ISSTableScanner
             {
                 indexPosition = ifile.getFilePointer();
                 DecoratedKey indexDecoratedKey = sstable.decorateKey(ByteBufferUtil.readWithShortLength(ifile));
-                if (indexDecoratedKey.compareTo(position) > 0)
+
+                // Whether the position or range is present in the SSTable.
+                boolean isFound = (range == null && indexDecoratedKey.compareTo(position) > 0)
+                                  || (range != null && (indexDecoratedKey.compareTo(range.left) > 0 || range.contains(indexDecoratedKey)));
+                if (isFound)
                 {
                     // Found, just read the dataPosition and seek into index and data files
                     long dataPosition = RowIndexEntry.Serializer.readPosition(ifile);
-                    // seek the index file position as we will presumably seek further when goign to the next position.
+                    // seek the index file position as we will presumably seek further when going to the next position.
                     ifile.seek(indexPosition);
+                    if (seekDataFile)
+                    {
+                        dfile.seek(dataPosition);
+                    }
                     return dataPosition;
                 }
                 else
@@ -250,6 +224,25 @@ public class BigTableScanner implements ISSTableScanner
         return 0L;
     }
 
+    /**
+     * Seeks to the start of the current range and updates both the index and data file positions.
+     */
+    private void seekToCurrentRangeStart() throws CorruptSSTableException
+    {
+        seekAndProcess(currentRange.left, currentRange, true);
+    }
+
+    /**
+     * Gets the position in the data file, but does not seek to it. This does seek the index to find the data position
+     * but does not actually seek the data file.
+     * @param position position to find in data file.
+     * @return offset in data file where position exists.
+     * @throws CorruptSSTableException if SSTable was malformed
+     */
+    public long getDataPosition(PartitionPosition position) throws CorruptSSTableException
+    {
+        return seekAndProcess(position, null, false);
+    }
 
     public void close()
     {
