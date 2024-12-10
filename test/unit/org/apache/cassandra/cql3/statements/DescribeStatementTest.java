@@ -1076,7 +1076,8 @@ public class DescribeStatementTest extends CQLTester
                "    AND read_repair = 'BLOCKING'\n" +
                "    AND speculative_retry = '99p'\n" +
                "    AND repair_full = {'enabled': 'true'}\n" +
-               "    AND repair_incremental = {'enabled': 'true'};";
+               "    AND repair_incremental = {'enabled': 'true'}\n" +
+               "    AND repair_preview_repaired = {'enabled': 'true'};";
     }
 
     private static String cqlQuoted(Map<String, String> map)
@@ -1105,7 +1106,8 @@ public class DescribeStatementTest extends CQLTester
                "    AND read_repair = 'BLOCKING'\n" +
                "    AND speculative_retry = '99p'\n" +
                "    AND repair_full = {'enabled': 'true'}\n" +
-               "    AND repair_incremental = {'enabled': 'true'};";
+               "    AND repair_incremental = {'enabled': 'true'}\n" +
+               "    AND repair_preview_repaired = {'enabled': 'true'};";
     }
 
     private static String keyspaceOutput()
