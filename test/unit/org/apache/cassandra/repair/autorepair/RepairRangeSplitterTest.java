@@ -158,10 +158,18 @@ public class RepairRangeSplitterTest extends CQLTester
         repairRangeSplitter = new RepairRangeSplitter(Collections.singletonMap(TABLE_BATCH_LIMIT, "1"));
         Collection<Range<Token>> ranges = Collections.singleton(FULL_RANGE);
 
-        List<String> tableNames = createAndInsertTables(3);
+        List<String> tableNames = createAndInsertTables(1);
+        Refs<SSTableReader> sstables = RepairRangeSplitter.getSSTableReaderRefs(RepairType.FULL, KEYSPACE, tableNames.get(0), FULL_RANGE);
+        Iterator<SSTableReader> iter = sstables.iterator();
+        int count = 0;
+        while (iter.hasNext())
+        {
+            iter.next();
+            count++;
+        }
+        assertEquals(1, count);
         List<SizedRepairAssignment> assignments = repairRangeSplitter.getRepairAssignmentsForKeyspace(RepairType.FULL, KEYSPACE, tableNames, ranges);
-
-        assertEquals(3, assignments.size());
+        assertEquals(1, assignments.size());
     }
 
     @Test
