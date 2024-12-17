@@ -19,10 +19,12 @@ package org.apache.cassandra.repair.autorepair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -33,6 +35,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.Lists;
 
 import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Splitter;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.locator.LocalStrategy;
 
@@ -52,6 +55,7 @@ import org.apache.cassandra.db.marshal.UUIDType;
 import org.apache.cassandra.gms.Gossiper;
 import org.apache.cassandra.locator.AbstractReplicationStrategy;
 import org.apache.cassandra.locator.InetAddressAndPort;
+import org.apache.cassandra.locator.MetaStrategy;
 import org.apache.cassandra.locator.NetworkTopologyStrategy;
 import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.schema.SchemaConstants;
@@ -73,6 +77,7 @@ import org.apache.cassandra.transport.messages.ResultMessage;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
+import org.apache.cassandra.utils.NoSpamLogger;
 
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN;
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_DUE_TO_PRIORITY;
@@ -798,7 +803,7 @@ public class AutoRepairUtils
                 ksReplicaOnNode = false;
             }
         }
-        if (replicationStrategy instanceof LocalStrategy)
+        if (replicationStrategy instanceof LocalStrategy || replicationStrategy instanceof MetaStrategy)
         {
             ksReplicaOnNode = false;
         }
@@ -848,29 +853,19 @@ public class AutoRepairUtils
         }
     }
 
-    public static List<Range<Token>> splitEvenly(Range<Token> tokenRange, int numberOfSplits)
+    public static Collection<Range<Token>> split(Range<Token> tokenRange, int numberOfSplits)
     {
-        List<Range<Token>> splitRanges = new ArrayList<>();
-        long left = (Long) tokenRange.left.getTokenValue();
-        long right = (Long) tokenRange.right.getTokenValue();
-        long repairTokenWidth = (right - left) / numberOfSplits;
-        for (int i = 0; i < numberOfSplits; i++)
+        Collection<Range<Token>> ranges;
+        Optional<Splitter> splitter = DatabaseDescriptor.getPartitioner().splitter();
+        if (splitter.isEmpty())
         {
-            long curLeft = left + (i * repairTokenWidth);
-            long curRight = curLeft + repairTokenWidth;
-
-            if ((i + 1) == numberOfSplits)
-            {
-                curRight = right;
-            }
-
-            Token childStartToken = ClusterMetadata.current().partitioner.getTokenFactory().fromString("" + curLeft);
-            Token childEndToken = ClusterMetadata.current().partitioner.getTokenFactory().fromString("" + curRight);
-            logger.debug("Current Token Left side {}, right side {}", childStartToken
-                                                                      .toString(), childEndToken.toString());
-            Range<Token> splitRange = new Range<>(childStartToken, childEndToken);
-            splitRanges.add(splitRange);
+            NoSpamLogger.log(logger, NoSpamLogger.Level.WARN, 30, TimeUnit.MINUTES, "Partitioner {} does not support splitting, falling back to splitting by token range", DatabaseDescriptor.getPartitioner());
+            ranges = Collections.singleton(tokenRange);
         }
-        return splitRanges;
+        else
+        {
+            ranges = splitter.get().split(Collections.singleton(tokenRange), numberOfSplits);
+        }
+        return ranges;
     }
 }
