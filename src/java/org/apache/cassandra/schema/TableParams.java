@@ -153,7 +153,7 @@ public final class TableParams
                             .extensions(params.extensions)
                             .cdc(params.cdc)
                             .readRepair(params.readRepair)
-                            .autoRepair(params.autoRepair)
+                            .automatedRepair(params.autoRepair)
         ;
     }
 
@@ -502,7 +502,7 @@ public final class TableParams
             return this;
         }
 
-        public Builder autoRepair(AutoRepairParams val)
+        public Builder automatedRepair(AutoRepairParams val)
         {
             autoRepair = val;
             return this;
