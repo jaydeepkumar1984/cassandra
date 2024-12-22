@@ -143,6 +143,12 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
+    public void setAutoRepairMinRepairTaskDuration(String duration)
+    {
+        config.setRepairTaskMinDuration(duration);
+    }
+
+    @Override
     public void setRepairSSTableCountHigherThreshold(RepairType repairType, int sstableHigherThreshold)
     {
         config.setRepairSSTableCountHigherThreshold(repairType, sstableHigherThreshold);
