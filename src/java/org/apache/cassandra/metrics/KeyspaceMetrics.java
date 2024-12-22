@@ -180,6 +180,11 @@ public class KeyspaceMetrics
 
     public final Meter tooManySSTableIndexesReadWarnings;
     public final Meter tooManySSTableIndexesReadAborts;
+    public final Meter bytesAnticompacted;
+    public final Meter bytesMutatedAnticompaction;
+    public final Meter bytesPreviewed;
+    public final Meter tokenRangesPreviewedDesynchronized;
+    public final Meter bytesPreviewedDesynchronized;
 
     public final ImmutableMap<SSTableFormat<?, ?>, ImmutableMap<String, Gauge<? extends Number>>> formatSpecificGauges;
 
@@ -288,6 +293,11 @@ public class KeyspaceMetrics
         outOfRangeTokenReads = createKeyspaceCounter("ReadOutOfRangeToken");
         outOfRangeTokenWrites = createKeyspaceCounter("WriteOutOfRangeToken");
         outOfRangeTokenPaxosRequests = createKeyspaceCounter("PaxosOutOfRangeToken");
+        bytesAnticompacted =  createKeyspaceMeter("BytesAnticompacted");
+        bytesMutatedAnticompaction = createKeyspaceMeter("BytesMutatedAnticompaction");
+        bytesPreviewed = createKeyspaceMeter("BytesPreviewed");
+        tokenRangesPreviewedDesynchronized = createKeyspaceMeter("TokenRangesPreviewedDesynchronized");
+        bytesPreviewedDesynchronized = createKeyspaceMeter("BytesPreviewedDesynchronized");
     }
 
     /**
