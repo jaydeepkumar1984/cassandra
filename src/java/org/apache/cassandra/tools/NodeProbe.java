@@ -2416,7 +2416,8 @@ public class NodeProbe implements AutoCloseable
         ssProxy.abortBootstrap(nodeId, endpoint);
     }
 
-    public AutoRepairConfig getAutoRepairConfig() {
+    public AutoRepairConfig getAutoRepairConfig()
+    {
         return autoRepairProxy.getAutoRepairConfig();
     }
 
@@ -2499,11 +2500,13 @@ public class NodeProbe implements AutoCloseable
         autoRepairProxy.setIgnoreDCs(repairType, ignoreDCs);
     }
 
-    public void setParallelRepairPercentage(AutoRepairConfig.RepairType repairType, int percentage) {
+    public void setParallelRepairPercentage(AutoRepairConfig.RepairType repairType, int percentage)
+    {
         autoRepairProxy.setParallelRepairPercentage(repairType, percentage);
     }
 
-    public void setParallelRepairCount(AutoRepairConfig.RepairType repairType, int count) {
+    public void setParallelRepairCount(AutoRepairConfig.RepairType repairType, int count)
+    {
         autoRepairProxy.setParallelRepairCount(repairType, count);
     }
 
@@ -2522,7 +2525,8 @@ public class NodeProbe implements AutoCloseable
         return ssProxy.mutateSSTableRepairedState(repair, preview, keyspace, tables);
     }
 
-    public List<String> getTablesForKeyspace(String keyspace) {
+    public List<String> getTablesForKeyspace(String keyspace)
+    {
         return ssProxy.getTablesForKeyspace(keyspace);
     }
 
