@@ -2416,8 +2416,19 @@ public class NodeProbe implements AutoCloseable
         ssProxy.abortBootstrap(nodeId, endpoint);
     }
 
-    public AutoRepairConfig getAutoRepairConfig() {
+    public AutoRepairConfig getAutoRepairConfig()
+    {
         return autoRepairProxy.getAutoRepairConfig();
+    }
+
+    public Map<String, String> getAutoRepairTokenRangeSplitterParameters(AutoRepairConfig.RepairType repairType)
+    {
+        return autoRepairProxy.getAutoRepairTokenRangeSplitterParameters(repairType);
+    }
+
+    public void setAutoRepairTokenRangeSplitterParameter(AutoRepairConfig.RepairType repairType, String key, String value)
+    {
+        autoRepairProxy.setAutoRepairTokenRangeSplitterParameter(repairType, key, value);
     }
 
     public void setAutoRepairEnabled(AutoRepairConfig.RepairType repairType, boolean enabled)
@@ -2442,11 +2453,6 @@ public class NodeProbe implements AutoCloseable
 
     public void setForceRepairForHosts(AutoRepairConfig.RepairType repairType, Set<InetAddressAndPort> hosts){
         autoRepairProxy.setForceRepairForHosts(repairType, hosts);
-    }
-
-    public void setRepairSubRangeNum(AutoRepairConfig.RepairType repairType, int repairSubRanges)
-    {
-        autoRepairProxy.setRepairSubRangeNum(repairType, repairSubRanges);
     }
 
     public void setRepairMinInterval(AutoRepairConfig.RepairType repairType, String minRepairInterval)
@@ -2494,11 +2500,13 @@ public class NodeProbe implements AutoCloseable
         autoRepairProxy.setIgnoreDCs(repairType, ignoreDCs);
     }
 
-    public void setParallelRepairPercentage(AutoRepairConfig.RepairType repairType, int percentage) {
+    public void setParallelRepairPercentage(AutoRepairConfig.RepairType repairType, int percentage)
+    {
         autoRepairProxy.setParallelRepairPercentage(repairType, percentage);
     }
 
-    public void setParallelRepairCount(AutoRepairConfig.RepairType repairType, int count) {
+    public void setParallelRepairCount(AutoRepairConfig.RepairType repairType, int count)
+    {
         autoRepairProxy.setParallelRepairCount(repairType, count);
     }
 
@@ -2517,7 +2525,8 @@ public class NodeProbe implements AutoCloseable
         return ssProxy.mutateSSTableRepairedState(repair, preview, keyspace, tables);
     }
 
-    public List<String> getTablesForKeyspace(String keyspace) {
+    public List<String> getTablesForKeyspace(String keyspace)
+    {
         return ssProxy.getTablesForKeyspace(keyspace);
     }
 
