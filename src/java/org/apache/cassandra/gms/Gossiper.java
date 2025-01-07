@@ -2392,6 +2392,22 @@ public class Gossiper implements IFailureDetectionEventListener, GossiperMBean
         }
     }
 
+    public boolean hasMultipleLiveVersions()
+    {
+        Set<InetAddressAndPort> members = getLiveTokenOwners();
+        Set<CassandraVersion> versions = new HashSet<>();
+        for (InetAddressAndPort member : members)
+        {
+            CassandraVersion version = getReleaseVersion(member);
+            if (version == null)
+                continue;
+            versions.add(version);
+            if (versions.size() > 1)
+                return true;
+        }
+        return false;
+    }
+
     /**
      * Returns {@code false} only if the information about the version of each node in the cluster is available and
      * ALL the nodes are on 4.0+ (regardless of the patch version).

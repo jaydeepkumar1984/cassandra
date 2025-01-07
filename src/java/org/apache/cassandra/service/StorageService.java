@@ -85,6 +85,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.common.util.concurrent.Uninterruptibles;
 
+import org.apache.cassandra.db.guardrails.Guardrails;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.apache.cassandra.repair.autorepair.AutoRepair;
@@ -4553,6 +4554,11 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         {
             datacenters.removeAll(existingDatacenters);
             throw new IllegalArgumentException("data center(s) " + datacenters.toString() + " not found");
+        }
+
+        if (Guardrails.mixedRepairsEnabled.triggersOn(null))
+        {
+            throw new IllegalStateException("Cannot run repair when nodes in the cluster have different versions.");
         }
 
         RepairRunnable task = new RepairRunnable(this, cmd, options, keyspace);

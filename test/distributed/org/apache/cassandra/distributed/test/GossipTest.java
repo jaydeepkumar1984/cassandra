@@ -41,6 +41,7 @@ import org.apache.cassandra.distributed.shared.ClusterUtils;
 import org.apache.cassandra.gms.ApplicationState;
 import org.apache.cassandra.gms.EndpointState;
 import org.apache.cassandra.gms.Gossiper;
+import org.apache.cassandra.gms.VersionedValue;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.PendingRangeCalculatorService;
 import org.apache.cassandra.service.StorageService;
@@ -282,6 +283,27 @@ public class GossipTest extends TestBaseImpl
                               node1, node3);
             // node1 & node3 should not consider any ranges as still pending for node2
             assertPendingRangesForPeer(false, movingAddress, cluster);
+        }
+    }
+
+    @Test
+    public void repairsDisabledOnMultiVersionGuardrail() throws Exception
+    {
+        try (Cluster cluster = builder()
+                               .withNodes(2)
+                               .withConfig(config -> config.with(GOSSIP)
+                                                     .set("mixed_version_repairs_enabled", false))
+                               .start())
+        {
+            InetSocketAddress peer = cluster.get(2).broadcastAddress();
+            String version = "4.0.1920";
+            cluster.get(1).runOnInstance(() -> {
+                EndpointState epState = Gossiper.instance.getEndpointStateForEndpoint(InetAddressAndPort.getByAddress(peer));
+                VersionedValue value = StorageService.instance.valueFactory.rack(version);
+                epState.addApplicationState(ApplicationState.RELEASE_VERSION, value);
+            });
+            NodeToolResult result = cluster.get(1).nodetoolResult("repair", "system_distributed");
+            assertTrue(result.getStderr().contains("Cannot run repair when nodes in the cluster have different versions"));
         }
     }
 

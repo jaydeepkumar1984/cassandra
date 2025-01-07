@@ -53,6 +53,10 @@ public interface GuardrailsMBean
      */
     void setKeyspacesThreshold(int warn, int fail);
 
+    boolean getMixedVersionRepairsEnabled();
+
+    void setMixedVersionRepairsEnabled(boolean enabled);
+
     /**
      * @return The threshold to warn when creating more tables than threshold.
      * -1 means disabled.

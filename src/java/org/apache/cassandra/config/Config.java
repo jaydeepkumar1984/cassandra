@@ -391,6 +391,8 @@ public class Config
     // When true, CDC data in SSTable go through commit logs during internodes streaming, e.g. repair
     // When false, it behaves the same as normal streaming.
     public volatile boolean cdc_on_repair_enabled = true;
+
+    public boolean mixed_version_repairs_enabled = true;
     public String cdc_raw_directory;
     @Replaces(oldName = "cdc_total_space_in_mb", converter = Converters.MEBIBYTES_DATA_STORAGE_INT, deprecated = true)
     public DataStorageSpec.IntMebibytesBound cdc_total_space = new DataStorageSpec.IntMebibytesBound("0MiB");

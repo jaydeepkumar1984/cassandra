@@ -101,6 +101,12 @@ public interface GuardrailsConfig
     int getPartitionKeysInSelectWarnThreshold();
 
     /**
+     * @return if repairs during mixed versions are allowed
+     */
+    boolean getMixedVersionRepairsEnabled();
+    boolean setMixedVersionRepairsEnabled(boolean enabled);
+
+    /**
      * @return The threshold to fail when partition keys in select more than threshold.
      */
     int getPartitionKeysInSelectFailThreshold();
