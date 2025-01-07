@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +37,7 @@ import org.apache.cassandra.distributed.api.Feature;
 import org.apache.cassandra.distributed.api.IInstanceConfig;
 import org.apache.cassandra.distributed.api.IInvokableInstance;
 import org.apache.cassandra.distributed.api.IIsolatedExecutor;
+import org.apache.cassandra.distributed.api.NodeToolResult;
 import org.apache.cassandra.distributed.api.TokenSupplier;
 import org.apache.cassandra.distributed.shared.ClusterUtils;
 import org.apache.cassandra.gms.Gossiper;
@@ -46,9 +48,15 @@ import org.apache.cassandra.tcm.ClusterMetadata;
 import org.apache.cassandra.tcm.ClusterMetadataService;
 import org.apache.cassandra.tcm.Epoch;
 import org.apache.cassandra.tcm.Transformation;
+import org.apache.cassandra.tcm.membership.Location;
+import org.apache.cassandra.tcm.membership.MembershipUtils;
+import org.apache.cassandra.tcm.membership.NodeAddresses;
 import org.apache.cassandra.tcm.membership.NodeState;
+import org.apache.cassandra.tcm.membership.NodeVersion;
 import org.apache.cassandra.tcm.ownership.UniformRangePlacement;
 import org.apache.cassandra.tcm.transformations.PrepareMove;
+import org.apache.cassandra.tcm.transformations.Register;
+import org.apache.cassandra.utils.CassandraVersion;
 import org.assertj.core.api.Assertions;
 
 import static org.apache.cassandra.config.CassandraRelevantProperties.JOIN_RING;
@@ -61,6 +69,7 @@ import static org.apache.cassandra.distributed.shared.ClusterUtils.pauseBeforeCo
 import static org.apache.cassandra.distributed.shared.ClusterUtils.replaceHostAndStart;
 import static org.apache.cassandra.distributed.shared.ClusterUtils.stopUnchecked;
 import static org.apache.cassandra.distributed.shared.NetworkTopology.singleDcNetworkTopology;
+import static org.apache.cassandra.tcm.membership.NodeVersion.CURRENT_METADATA_VERSION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -171,6 +180,26 @@ public class GossipTest extends TestBaseImpl
             ClusterUtils.waitForCMSToQuiesce(cluster, node1);
             // node1 & node3 should not consider any ranges as still pending for node2
             assertPendingRangesForPeer(false, movingAddress, cluster);
+        }
+    }
+
+    @Test
+    public void repairsDisabledOnMultiVersionGuardrail() throws Exception
+    {
+        try (Cluster cluster = builder()
+                               .withNodes(2)
+                               .withConfig(config -> config.with(GOSSIP)
+                                                           .set("mixed_version_repairs_enabled", false))
+                               .start())
+        {
+            cluster.get(1).runOnInstance(() -> {
+                NodeAddresses addresses = MembershipUtils.nodeAddresses(new Random());
+                ClusterMetadataService.instance().commit(
+                    new Register(addresses, new Location("dc1", "rack1"), new NodeVersion(new CassandraVersion("4.0"), CURRENT_METADATA_VERSION))
+                );
+            });
+            NodeToolResult result = cluster.get(1).nodetoolResult("repair", "system_distributed");
+            assertTrue(result.getStderr().contains("Repairs while in mixed mode is disabled."));
         }
     }
 

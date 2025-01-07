@@ -206,6 +206,22 @@ public class GuardrailsOptions implements GuardrailsConfig
     }
 
     @Override
+    public boolean getMixedVersionRepairsEnabled()
+    {
+        return config.mixed_version_repairs_enabled;
+    }
+
+    @Override
+    public boolean setMixedVersionRepairsEnabled(boolean enabled)
+    {
+        updatePropertyWithLogging("mixed_version_repairs_enabled",
+                                  enabled,
+                                  () -> config.mixed_version_repairs_enabled,
+                                  x -> config.mixed_version_repairs_enabled = x);
+        return enabled;
+    }
+
+    @Override
     public int getPartitionKeysInSelectWarnThreshold()
     {
         return config.partition_keys_in_select_warn_threshold;

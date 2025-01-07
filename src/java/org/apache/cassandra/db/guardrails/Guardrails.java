@@ -39,7 +39,12 @@ import org.apache.cassandra.db.compaction.TimeWindowCompactionStrategy;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.ClientState;
 import org.apache.cassandra.service.disk.usage.DiskUsageBroadcaster;
+import org.apache.cassandra.tcm.ClusterMetadata;
+import org.apache.cassandra.tcm.membership.Directory;
+import org.apache.cassandra.tcm.membership.NodeId;
+import org.apache.cassandra.tcm.membership.NodeVersion;
 import org.apache.cassandra.utils.MBeanWrapper;
+import org.apache.cassandra.utils.btree.BTreeMap;
 
 import static java.lang.String.format;
 
@@ -288,6 +293,23 @@ public final class Guardrails implements GuardrailsMBean
                    "ALLOW FILTERING can potentially visit all the data in the table and have unpredictable performance.",
                    state -> CONFIG_PROVIDER.getOrCreate(state).getAllowFilteringEnabled(),
                    "Querying with ALLOW FILTERING");
+
+    /**
+     * Guardrail disabling repairs when there are mixed versions
+     */
+    public static final EnableFlag mixedRepairsEnabled =
+    new EnableFlag("mixed_version_repairs",
+                    "Mixed mode repairs and streaming adds many unknowns and additional performance impacts during upgrades.",
+                    state -> {
+                        if (CONFIG_PROVIDER.getOrCreate(state).getMixedVersionRepairsEnabled())
+                            return true;
+                        Directory directory = ClusterMetadata.current().directory;
+                        Set<NodeId> nodes = directory.states.keySet();
+                        BTreeMap<NodeId, NodeVersion> versions = directory.versions;
+                        NodeVersion version = versions.get(nodes.iterator().next());
+                        return nodes.stream().allMatch(node -> versions.get(node).equals(version));
+                    },
+                    "Running repairs during mixed Cassandra versions");
 
     /**
      * Guardrail disabling setting SimpleStrategy via keyspace creation or alteration
@@ -592,6 +614,18 @@ public final class Guardrails implements GuardrailsMBean
     public void setKeyspacesThreshold(int warn, int fail)
     {
         DEFAULT_CONFIG.setKeyspacesThreshold(warn, fail);
+    }
+
+    @Override
+    public boolean getMixedVersionRepairsEnabled()
+    {
+        return DEFAULT_CONFIG.getMixedVersionRepairsEnabled();
+    }
+
+    @Override
+    public void setMixedVersionRepairsEnabled(boolean enabled)
+    {
+        DEFAULT_CONFIG.setMixedVersionRepairsEnabled(enabled);
     }
 
     @Override
