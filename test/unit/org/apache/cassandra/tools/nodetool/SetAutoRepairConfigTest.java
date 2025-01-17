@@ -57,7 +57,7 @@ public class SetAutoRepairConfigTest
     public static void before(NodeProbe probeMock, PrintStream outMock)
     {
         config = new AutoRepairConfig(true);
-        when(probeMock.getAutoRepairConfig()).thenReturn(config);
+        when(probeMock.getAutoRepairEnabled()).thenReturn(true);
         cmd = new SetAutoRepairConfig();
         cmd.out = outMock;
     }
@@ -84,15 +84,15 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setAutoRepairHistoryClearDeleteHostsBufferDuration("1s");
+            verify(probe, times(1)).setAutoRepairHistoryClearDeleteHostsBufferInterval("1s");
 
             // test scenario when auto repair is disabled
-            when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            when(probe.getAutoRepairEnabled()).thenReturn(false);
 
             cmd.execute(probe);
 
             // test new calls are not made when auto repair is disabled
-            verify(probe, times(1)).setAutoRepairHistoryClearDeleteHostsBufferDuration("1s");
+            verify(probe, times(1)).setAutoRepairHistoryClearDeleteHostsBufferInterval("1s");
         }
 
         @Test
@@ -102,7 +102,7 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setAutoRepairMaxRetriesCount(2);
+            verify(probe, times(1)).setAutoRepairRepairMaxRetries(2);
         }
 
         @Test
@@ -112,7 +112,7 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setAutoRepairRetryBackoff("3s");
+            verify(probe, times(1)).setAutoRepairRepairRetryBackoff("3s");
         }
 
         @Test
@@ -122,13 +122,13 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(0)).startScheduler();
+            verify(probe, times(0)).startAutoRepairScheduler();
 
             cmd.args = ImmutableList.of("start_scheduler", "true");
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).startScheduler();
+            verify(probe, times(1)).startAutoRepairScheduler();
         }
 
         @Test
@@ -138,7 +138,7 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setAutoRepairMinRepairTaskDuration("4s");
+            verify(probe, times(1)).setAutoRepairRepairTaskMinDuration("4s");
         }
     }
 
@@ -175,40 +175,40 @@ public class SetAutoRepairConfigTest
         @Test(expected = IllegalArgumentException.class)
         public void testNoArgs()
         {
-            cmd.repairTypeStr = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.execute(probe);
         }
 
         @Test
         public void testRepairSchedulingDisabled()
         {
-            when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
-            cmd.repairTypeStr = repairType.name();
+            when(probe.getAutoRepairEnabled()).thenReturn(false);
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("threads", "1");
 
             cmd.execute(probe);
 
             verify(out, times(1)).println("Auto-repair is not enabled");
-            verify(probe, times(0)).setRepairThreads(repairType, 1);
+            verify(probe, times(0)).setAutoRepairNumberOfRepairThreads(repairType.getConfigName(), 1);
         }
 
         @Test
         public void testRepairTypeDisabled()
         {
-            config.setAutoRepairEnabled(repairType, false);
-            cmd.repairTypeStr = repairType.name();
+            config.setEnabled(repairType, false);
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("number_of_repair_threads", "1");
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setRepairThreads(repairType, 1);
+            verify(probe, times(1)).setAutoRepairNumberOfRepairThreads(repairType.getConfigName(), 1);
         }
 
 
         @Test
         public void testV2FlagMissing()
         {
-            cmd.repairTypeStr = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("threads", "1");
 
             try
@@ -222,13 +222,13 @@ public class SetAutoRepairConfigTest
                 // expected
             }
 
-            verify(probe, times(0)).setRepairThreads(repairType, 0);
+            verify(probe, times(0)).setAutoRepairNumberOfRepairThreads(repairType.getConfigName(), 0);
         }
 
         @Test(expected = IllegalArgumentException.class)
         public void testInvalidParamType()
         {
-            cmd.repairTypeStr = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("unknown_type", "1");
 
             cmd.execute(probe);
@@ -237,23 +237,23 @@ public class SetAutoRepairConfigTest
         @Test
         public void testPriorityHosts()
         {
-            cmd.repairTypeStr = repairType.name();
-            cmd.args = ImmutableList.of("priority_hosts", String.join(",", localEndpoint.toString().substring(1), otherEndpoint.toString().substring(1)));
+            cmd.repairType = repairType.getConfigName();
+            cmd.args = ImmutableList.of("priority_hosts", String.join(",", localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setRepairPriorityForHosts(repairType, ImmutableSet.of(localEndpoint, otherEndpoint));
+            verify(probe, times(1)).setAutoRepairPriorityHosts(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
         }
 
         @Test
         public void testForceRepairHosts()
         {
-            cmd.repairTypeStr = repairType.name();
-            cmd.args = ImmutableList.of("forcerepair_hosts", String.join(",", localEndpoint.toString().substring(1), otherEndpoint.toString().substring(1)));
+            cmd.repairType = repairType.getConfigName();
+            cmd.args = ImmutableList.of("forcerepair_hosts", String.join(",", localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setForceRepairForHosts(repairType, ImmutableSet.of(localEndpoint, otherEndpoint));
+            verify(probe, times(1)).setAutoRepairForceRepair(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
         }
     }
 
@@ -276,17 +276,17 @@ public class SetAutoRepairConfigTest
         public static Collection<Object[]> testCases()
         {
             return Stream.of(
-            forEachRepairType("enabled", "true", (type) -> verify(probe, times(1)).setAutoRepairEnabled(type, true)),
-            forEachRepairType("number_of_repair_threads", "1", (type) -> verify(probe, times(1)).setRepairThreads(type, 1)),
-            forEachRepairType("min_repair_interval", "3h", (type) -> verify(probe, times(1)).setRepairMinInterval(type, "3h")),
-            forEachRepairType("sstable_upper_threshold", "4", (type) -> verify(probe, times(1)).setRepairSSTableCountHigherThreshold(type, 4)),
-            forEachRepairType("table_max_repair_time", "5s", (type) -> verify(probe, times(1)).setAutoRepairTableMaxRepairTime(type, "5s")),
-            forEachRepairType("repair_primary_token_range_only", "true", (type) -> verify(probe, times(1)).setPrimaryTokenRangeOnly(type, true)),
-            forEachRepairType("parallel_repair_count", "6", (type) -> verify(probe, times(1)).setParallelRepairCount(type, 6)),
-            forEachRepairType("parallel_repair_percentage", "7", (type) -> verify(probe, times(1)).setParallelRepairPercentage(type, 7)),
-            forEachRepairType("materialized_view_repair_enabled", "true", (type) -> verify(probe, times(1)).setMaterializedViewRepairEnabled(type, true)),
-            forEachRepairType("ignore_dcs", "dc1,dc2", (type) -> verify(probe, times(1)).setAutoRepairIgnoreDCs(type, ImmutableSet.of("dc1", "dc2"))),
-            forEachRepairType("token_range_splitter.max_bytes_per_schedule", "500GiB", (type) -> verify(probe, times(1)).setAutoRepairTokenRangeSplitterParameter(type, "max_bytes_per_schedule", "500GiB"))
+            forEachRepairType("enabled", "true", (type) -> verify(probe, times(1)).setAutoRepairEnabled(type.getConfigName(), true)),
+            forEachRepairType("number_of_repair_threads", "1", (type) -> verify(probe, times(1)).setAutoRepairNumberOfRepairThreads(type.getConfigName(), 1)),
+            forEachRepairType("min_repair_interval", "3h", (type) -> verify(probe, times(1)).setAutoRepairMinRepairInterval(type.getConfigName(), "3h")),
+            forEachRepairType("sstable_upper_threshold", "4", (type) -> verify(probe, times(1)).setAutoRepairSSTableUpperThreshold(type.getConfigName(), 4)),
+            forEachRepairType("table_max_repair_time", "5s", (type) -> verify(probe, times(1)).setAutoRepairTableMaxRepairTime(type.getConfigName(), "5s")),
+            forEachRepairType("repair_primary_token_range_only", "true", (type) -> verify(probe, times(1)).setAutoRepairRepairPrimaryTokenRangeOnly(type.getConfigName(), true)),
+            forEachRepairType("parallel_repair_count", "6", (type) -> verify(probe, times(1)).setAutoRepairParallelRepairCount(type.getConfigName(), 6)),
+            forEachRepairType("parallel_repair_percentage", "7", (type) -> verify(probe, times(1)).setAutoRepairParallelRepairPercentage(type.getConfigName(), 7)),
+            forEachRepairType("materialized_view_repair_enabled", "true", (type) -> verify(probe, times(1)).setAutoRepairMaterializedViewRepairEnabled(type.getConfigName(), true)),
+            forEachRepairType("ignore_dcs", "dc1,dc2", (type) -> verify(probe, times(1)).setAutoRepairIgnoreDCs(type.getConfigName(), ImmutableSet.of("dc1", "dc2"))),
+            forEachRepairType("token_range_splitter.max_bytes_per_schedule", "500GiB", (type) -> verify(probe, times(1)).setAutoRepairTokenRangeSplitterInstance(type.getConfigName(), "max_bytes_per_schedule", "500GiB"))
             ).flatMap(Function.identity()).collect(Collectors.toList());
         }
 
@@ -317,7 +317,7 @@ public class SetAutoRepairConfigTest
         @Test
         public void test()
         {
-            cmd.repairTypeStr = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of(paramType, paramVal);
 
             cmd.execute(probe);
@@ -325,7 +325,7 @@ public class SetAutoRepairConfigTest
             verifyFunc.accept(repairType);
 
             // test scenario when auto repair is disabled
-            when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            when(probe.getAutoRepairEnabled()).thenReturn(false);
 
             cmd.execute(probe);
 

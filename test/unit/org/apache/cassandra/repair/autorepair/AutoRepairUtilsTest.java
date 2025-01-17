@@ -370,7 +370,7 @@ public class AutoRepairUtilsTest extends CQLTester
     @Test
     public void testAddPriorityHost()
     {
-        AutoRepairUtils.addPriorityHosts(repairType, ImmutableSet.of(localEndpoint));
+        AutoRepairUtils.setPriorityHosts(repairType, ImmutableSet.of(localEndpoint));
 
         UntypedResultSet result = QueryProcessor.executeInternal(String.format(
         "SELECT * FROM %s.%s WHERE repair_type = '%s'",
@@ -412,11 +412,11 @@ public class AutoRepairUtilsTest extends CQLTester
         SchemaConstants.DISTRIBUTED_KEYSPACE_NAME, SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY,
         repairType.toString(), hostId));
 
-        Set<InetAddressAndPort> hosts = AutoRepairUtils.getPriorityHosts(repairType);
+        Set<String> hosts = AutoRepairUtils.getPriorityHosts(repairType);
 
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
-        assertTrue(hosts.contains(localEndpoint));
+        assertTrue(hosts.contains(localEndpoint.toString(false).substring(1)));
     }
 
     @Test
@@ -430,7 +430,7 @@ public class AutoRepairUtilsTest extends CQLTester
     @Test
     public void testTableMaxRepairTimeExceeded()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairTableMaxRepairTime(repairType, "0s");
+        DatabaseDescriptor.getAutoRepairConfig().setTableMaxRepairTime(repairType, "0s");
 
         assertTrue(AutoRepairUtils.tableMaxRepairTimeExceeded(repairType, 0));
     }
@@ -438,7 +438,7 @@ public class AutoRepairUtilsTest extends CQLTester
     @Test
     public void testKeyspaceMaxRepairTimeExceeded()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairTableMaxRepairTime(repairType, "0s");
+        DatabaseDescriptor.getAutoRepairConfig().setTableMaxRepairTime(repairType, "0s");
 
         assertTrue(AutoRepairUtils.keyspaceMaxRepairTimeExceeded(repairType, 0, 1));
     }

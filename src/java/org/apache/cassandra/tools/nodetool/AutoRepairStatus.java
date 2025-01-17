@@ -37,16 +37,17 @@ public class AutoRepairStatus extends NodeTool.NodeToolCmd
 {
     @VisibleForTesting
     @Option(title = "repair type", name = { "-t", "--repair-type" }, description = "Repair type")
-    protected AutoRepairConfig.RepairType repairType;
+    protected String repairType;
+
 
     @Override
     public void execute(NodeProbe probe)
     {
         checkArgument(repairType != null, "--repair-type is required.");
+        checkArgument(AutoRepairConfig.RepairType.isValid(repairType), "Invalid RepairType: " + repairType);
         PrintStream out = probe.output().out;
 
-        AutoRepairConfig config = probe.getAutoRepairConfig();
-        if (config == null || !config.isAutoRepairSchedulingEnabled())
+        if (!probe.getAutoRepairEnabled())
         {
             out.println("Auto-repair is not enabled");
             return;
@@ -54,7 +55,7 @@ public class AutoRepairStatus extends NodeTool.NodeToolCmd
 
         TableBuilder table = new TableBuilder();
         table.add("Active Repairs");
-        Set<String> ongoingRepairHostIds = probe.getOnGoingRepairHostIds(repairType);
+        Set<String> ongoingRepairHostIds = probe.getAutoRepairOnGoingRepairHostIds(repairType);
         table.add(getSetString(ongoingRepairHostIds));
         table.printTo(out);
     }

@@ -59,15 +59,15 @@ public class AutoRepairServiceBasicTest extends CQLTester {
 
     @Test
     public void testsetAutoRepairHistoryClearDeleteHostsBufferInSecV2() {
-        autoRepairService.setAutoRepairHistoryClearDeleteHostsBufferDuration("100s");
+        autoRepairService.setHistoryClearDeleteHostsBufferInterval("100s");
 
-        assertEquals(100, config.getAutoRepairHistoryClearDeleteHostsBufferInterval().toSeconds());
+        assertEquals(100, config.getHistoryClearDeleteHostsBufferInterval().toSeconds());
     }
 
 
     @Test
     public void testsetAutoRepairMaxRetriesCount() {
-        autoRepairService.setAutoRepairMaxRetriesCount(101);
+        autoRepairService.setRepairMaxRetries(101);
 
         assertEquals(101, config.getRepairMaxRetries());
     }
@@ -75,7 +75,7 @@ public class AutoRepairServiceBasicTest extends CQLTester {
 
     @Test
     public void testsetAutoRepairRetryBackoffInSec() {
-        autoRepairService.setAutoRepairRetryBackoff("102s");
+        autoRepairService.setRepairRetryBackoff("102s");
 
         assertEquals(102, config.getRepairRetryBackoff().toSeconds());
     }
@@ -84,7 +84,7 @@ public class AutoRepairServiceBasicTest extends CQLTester {
     public void testSetAutoRepairEnabledThrowsWithSchedulerDisabled() {
         autoRepairService.config = new AutoRepairConfig(false);
 
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test
@@ -92,7 +92,7 @@ public class AutoRepairServiceBasicTest extends CQLTester {
         autoRepairService.config = new AutoRepairConfig(true);
         autoRepairService.config.setMaterializedViewRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, false);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(true);
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test(expected = ConfigurationException.class)
@@ -100,7 +100,7 @@ public class AutoRepairServiceBasicTest extends CQLTester {
         autoRepairService.config = new AutoRepairConfig(true);
         autoRepairService.config.setMaterializedViewRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(true);
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test
@@ -108,7 +108,7 @@ public class AutoRepairServiceBasicTest extends CQLTester {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setMaterializedViewsEnabled(true);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(false);
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test
@@ -116,7 +116,7 @@ public class AutoRepairServiceBasicTest extends CQLTester {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setCDCOnRepairEnabled(true);
         DatabaseDescriptor.setCDCEnabled(false);
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test(expected = ConfigurationException.class)
@@ -124,13 +124,13 @@ public class AutoRepairServiceBasicTest extends CQLTester {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setCDCOnRepairEnabled(true);
         DatabaseDescriptor.setCDCEnabled(true);
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test
     public void testSetAutoRepairEnabledDoesNotThrowForIRWithCDCReplayDisabled() {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setCDCEnabled(true);
-        autoRepairService.setAutoRepairEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 }

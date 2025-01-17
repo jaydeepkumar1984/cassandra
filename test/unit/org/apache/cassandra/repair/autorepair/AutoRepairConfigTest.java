@@ -89,7 +89,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config.global_settings.enabled = true;
 
-        assertTrue(config.isAutoRepairEnabled(repairType));
+        assertTrue(config.getEnabled(repairType));
     }
 
     @Test
@@ -106,14 +106,14 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config = new AutoRepairConfig(false);
         config.global_settings.enabled = true;
-        assertFalse(config.isAutoRepairEnabled(repairType));
+        assertFalse(config.getEnabled(repairType));
     }
 
     @Test
     public void testIsAutoRepairEnabledReturnsTrueWhenRepairIsDisabledForRepairType()
     {
         config.global_settings.enabled = true;
-        config.setAutoRepairEnabled(repairType, false);
+        config.setEnabled(repairType, false);
         assertFalse(config.getOptions(repairType).enabled);
     }
 
@@ -122,7 +122,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         DatabaseDescriptor.setCDCEnabled(false);
         DatabaseDescriptor.setMaterializedViewsEnabled(false);
-        config.setAutoRepairEnabled(repairType, true);
+        config.setEnabled(repairType, true);
 
         assertTrue(config.getOptions(repairType).enabled);
     }
@@ -148,7 +148,7 @@ public class AutoRepairConfigTest extends CQLTester
     @Test
     public void testSetRepairThreads()
     {
-        config.setRepairThreads(repairType, 5);
+        config.setNumberOfRepairThreads(repairType, 5);
 
         assert config.getOptions(repairType).number_of_repair_threads == 5;
     }
@@ -158,7 +158,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config.global_settings.number_of_repair_threads = 5;
 
-        int result = config.getRepairThreads(repairType);
+        int result = config.getNumberOfRepairThreads(repairType);
 
         assertEquals(5, result);
     }
@@ -168,7 +168,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config.global_settings.min_repair_interval = new DurationSpec.IntSecondsBound("5s");
 
-        DurationSpec.IntSecondsBound result = config.getRepairMinInterval(repairType);
+        DurationSpec.IntSecondsBound result = config.getMinRepairInterval(repairType);
 
         assertEquals(5, result.toSeconds());
     }
@@ -176,7 +176,7 @@ public class AutoRepairConfigTest extends CQLTester
     @Test
     public void testSetRepairMinFrequencyInHours()
     {
-        config.setRepairMinInterval(repairType, "5s");
+        config.setMinRepairInterval(repairType, "5s");
 
         assert config.getOptions(repairType).min_repair_interval.toSeconds() == 5;
     }
@@ -186,7 +186,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config.history_clear_delete_hosts_buffer_interval = new DurationSpec.IntSecondsBound("5s");
 
-        int result = config.getAutoRepairHistoryClearDeleteHostsBufferInterval().toSeconds();
+        int result = config.getHistoryClearDeleteHostsBufferInterval().toSeconds();
 
         assertEquals(5, result);
     }
@@ -194,7 +194,7 @@ public class AutoRepairConfigTest extends CQLTester
     @Test
     public void testSetAutoRepairHistoryClearDeleteHostsBufferInSec()
     {
-        config.setAutoRepairHistoryClearDeleteHostsBufferInterval("5s");
+        config.setHistoryClearDeleteHostsBufferInterval("5s");
 
         assert Objects.equals(config.history_clear_delete_hosts_buffer_interval, new DurationSpec.IntSecondsBound("5s"));
     }
@@ -204,7 +204,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config.global_settings.sstable_upper_threshold = 5;
 
-        int result = config.getRepairSSTableCountHigherThreshold(repairType);
+        int result = config.getSSTableUpperThreshold(repairType);
 
         assertEquals(5, result);
     }
@@ -212,7 +212,7 @@ public class AutoRepairConfigTest extends CQLTester
     @Test
     public void testSetRepairSSTableCountHigherThreshold()
     {
-        config.setRepairSSTableCountHigherThreshold(repairType, 5);
+        config.setSSTableUpperThreshold(repairType, 5);
 
         assert config.getOptions(repairType).sstable_upper_threshold == 5;
     }
@@ -222,7 +222,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config.global_settings.table_max_repair_time = new DurationSpec.IntSecondsBound("5s");
 
-        DurationSpec.IntSecondsBound result = config.getAutoRepairTableMaxRepairTime(repairType);
+        DurationSpec.IntSecondsBound result = config.getTableMaxRepairTime(repairType);
 
         assertEquals(5, result.toSeconds());
     }
@@ -230,7 +230,7 @@ public class AutoRepairConfigTest extends CQLTester
     @Test
     public void testSetAutoRepairTableMaxRepairTimeInSec()
     {
-        config.setAutoRepairTableMaxRepairTime(repairType, "5s");
+        config.setTableMaxRepairTime(repairType, "5s");
 
         assert config.getOptions(repairType).table_max_repair_time.toSeconds() == 5;
     }
@@ -348,7 +348,7 @@ public class AutoRepairConfigTest extends CQLTester
     {
         config = new AutoRepairConfig();
 
-        boolean result = config.isAutoRepairSchedulingEnabled();
+        boolean result = config.getEnabled();
 
         assertFalse(result);
     }
@@ -356,7 +356,7 @@ public class AutoRepairConfigTest extends CQLTester
     @Test
     public void testIsAutoRepairSchedulingEnabledTrue()
     {
-        boolean result = config.isAutoRepairSchedulingEnabled();
+        boolean result = config.getEnabled();
 
         assertTrue(result);
     }

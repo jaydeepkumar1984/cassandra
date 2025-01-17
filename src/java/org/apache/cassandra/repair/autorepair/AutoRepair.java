@@ -122,7 +122,7 @@ public class AutoRepair
 
             for (AutoRepairConfig.RepairType repairType : AutoRepairConfig.RepairType.values())
             {
-                if (config.isAutoRepairEnabled(repairType))
+                if (config.getEnabled(repairType))
                     AutoRepairService.instance.checkCanRun(repairType);
 
                 repairExecutors.get(repairType).scheduleWithFixedDelay(
@@ -138,7 +138,7 @@ public class AutoRepair
     // repairAsync runs a repair session of the given type asynchronously.
     public void repairAsync(AutoRepairConfig.RepairType repairType)
     {
-        if (!AutoRepairService.instance.getAutoRepairConfig().isAutoRepairEnabled(repairType))
+        if (!AutoRepairService.instance.getAutoRepairConfig().getEnabled(repairType))
         {
             throw new ConfigurationException("Auto-repair is disabled for repair type " + repairType);
         }
@@ -149,7 +149,7 @@ public class AutoRepair
     public void repair(AutoRepairConfig.RepairType repairType)
     {
         AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
-        if (!config.isAutoRepairEnabled(repairType))
+        if (!config.getEnabled(repairType))
         {
             logger.debug("Auto-repair is disabled for repair type {}", repairType);
             return;
@@ -271,7 +271,7 @@ public class AutoRepair
                     tableStartTime = timeFunc.get();
                 }
                 previousAssignment = curRepairAssignment;
-                if (!config.isAutoRepairEnabled(repairType))
+                if (!config.getEnabled(repairType))
                 {
                     logger.error("Auto-repair for type {} is disabled hence not running repair", repairType);
                     repairState.setRepairInProgress(false);
@@ -298,7 +298,7 @@ public class AutoRepair
                              tokenRange.right.toString());
 
                 ranges.add(curRepairAssignment.getTokenRange());
-                if ((totalProcessedAssignments % config.getRepairThreads(repairType) == 0) ||
+                if ((totalProcessedAssignments % config.getNumberOfRepairThreads(repairType) == 0) ||
                     (totalProcessedAssignments == totalRepairAssignments))
                 {
                     int retryCount = 0;
@@ -380,7 +380,7 @@ public class AutoRepair
          * memtable flush
          */
         long timeElapsedSinceLastRepair = TimeUnit.MILLISECONDS.toSeconds(timeFunc.get() - repairState.getLastRepairTime());
-        if (timeElapsedSinceLastRepair < config.getRepairMinInterval(repairType).toSeconds())
+        if (timeElapsedSinceLastRepair < config.getMinRepairInterval(repairType).toSeconds())
         {
             logger.info("Too soon to run repair, last repair was done {} seconds ago",
                         timeElapsedSinceLastRepair);
@@ -412,7 +412,7 @@ public class AutoRepair
             // this is done to make autorepair safe as running repair on table with more sstables
             // may have its own challenges
             int totalSSTables = columnFamilyStore.getLiveSSTables().size();
-            if (totalSSTables > config.getRepairSSTableCountHigherThreshold(repairType))
+            if (totalSSTables > config.getSSTableUpperThreshold(repairType))
             {
                 logger.info("Too many SSTables for repair for table {}.{}" +
                             "totalSSTables {}", keyspace.getName(), tableName, totalSSTables);

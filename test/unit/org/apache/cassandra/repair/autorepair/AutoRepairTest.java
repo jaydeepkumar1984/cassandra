@@ -57,8 +57,8 @@ public class AutoRepairTest extends CQLTester
         AutoRepair.SLEEP_IF_REPAIR_FINISHES_QUICKLY = new DurationSpec.IntSecondsBound("0s");
         DatabaseDescriptor.setCDCOnRepairEnabled(false);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(false);
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.FULL, true);
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.INCREMENTAL, true);
+        DatabaseDescriptor.getAutoRepairConfig().setEnabled(RepairType.FULL, true);
+        DatabaseDescriptor.getAutoRepairConfig().setEnabled(RepairType.INCREMENTAL, true);
         AutoRepairService.setup();
     }
 
@@ -101,7 +101,7 @@ public class AutoRepairTest extends CQLTester
     @Test(expected = ConfigurationException.class)
     public void testSetupFailsWhenIREnabledWithCDCReplay()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.INCREMENTAL, true);
+        DatabaseDescriptor.getAutoRepairConfig().setEnabled(RepairType.INCREMENTAL, true);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(true);
         DatabaseDescriptor.setCDCEnabled(true);
         DatabaseDescriptor.setCDCOnRepairEnabled(true);
@@ -113,7 +113,7 @@ public class AutoRepairTest extends CQLTester
     @Test
     public void testNoFailureIfMVRepairOnButConfigIsOff()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.INCREMENTAL, true);
+        DatabaseDescriptor.getAutoRepairConfig().setEnabled(RepairType.INCREMENTAL, true);
         DatabaseDescriptor.getAutoRepairConfig().setMaterializedViewRepairEnabled(RepairType.INCREMENTAL, false);
         DatabaseDescriptor.setCDCOnRepairEnabled(false);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(true);
@@ -124,7 +124,7 @@ public class AutoRepairTest extends CQLTester
     @Test(expected = ConfigurationException.class)
     public void testSetupFailsWhenIREnabledWithMVReplay()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairEnabled(RepairType.INCREMENTAL, true);
+        DatabaseDescriptor.getAutoRepairConfig().setEnabled(RepairType.INCREMENTAL, true);
         DatabaseDescriptor.getAutoRepairConfig().setMaterializedViewRepairEnabled(RepairType.INCREMENTAL, true);
         DatabaseDescriptor.setCDCOnRepairEnabled(false);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(true);
