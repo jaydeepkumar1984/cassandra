@@ -41,7 +41,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -57,7 +56,7 @@ public class SetAutoRepairConfigTest
     public static void before(NodeProbe probeMock, PrintStream outMock)
     {
         config = new AutoRepairConfig(true);
-        when(probeMock.getAutoRepairConfig()).thenReturn(config);
+        //when(probeMock.getAutoRepairConfig()).thenReturn(config);
         cmd = new SetAutoRepairConfig();
         cmd.out = outMock;
     }
@@ -87,7 +86,7 @@ public class SetAutoRepairConfigTest
             verify(probe, times(1)).setAutoRepairHistoryClearDeleteHostsBufferDuration("1s");
 
             // test scenario when auto repair is disabled
-            when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            //when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
 
             cmd.execute(probe);
 
@@ -182,7 +181,7 @@ public class SetAutoRepairConfigTest
         @Test
         public void testRepairSchedulingDisabled()
         {
-            when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            //when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
             cmd.repairTypeStr = repairType.name();
             cmd.args = ImmutableList.of("threads", "1");
 
@@ -195,7 +194,7 @@ public class SetAutoRepairConfigTest
         @Test
         public void testRepairTypeDisabled()
         {
-            config.setAutoRepairEnabled(repairType, false);
+            config.setEnabled(repairType, false);
             cmd.repairTypeStr = repairType.name();
             cmd.args = ImmutableList.of("number_of_repair_threads", "1");
 
@@ -325,7 +324,7 @@ public class SetAutoRepairConfigTest
             verifyFunc.accept(repairType);
 
             // test scenario when auto repair is disabled
-            when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            //when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
 
             cmd.execute(probe);
 

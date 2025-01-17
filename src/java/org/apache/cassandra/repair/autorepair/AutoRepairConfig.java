@@ -126,12 +126,12 @@ public class AutoRepairConfig implements Serializable
         return repair_check_interval;
     }
 
-    public boolean isAutoRepairSchedulingEnabled()
+    public boolean getEnabled()
     {
         return enabled;
     }
 
-    public DurationSpec.IntSecondsBound getAutoRepairHistoryClearDeleteHostsBufferInterval()
+    public DurationSpec.IntSecondsBound getHistoryClearDeleteHostsBufferInterval()
     {
         return history_clear_delete_hosts_buffer_interval;
     }
@@ -142,7 +142,7 @@ public class AutoRepairConfig implements Serializable
         AutoRepair.instance.setup();
     }
 
-    public void setAutoRepairHistoryClearDeleteHostsBufferInterval(String duration)
+    public void setHistoryClearDeleteHostsBufferInterval(String duration)
     {
         history_clear_delete_hosts_buffer_interval = new DurationSpec.IntSecondsBound(duration);
     }
@@ -177,19 +177,14 @@ public class AutoRepairConfig implements Serializable
         repair_task_min_duration = new DurationSpec.LongSecondsBound(duration);
     }
 
-    public boolean isAutoRepairEnabled(RepairType repairType)
+    public boolean getEnabled(RepairType repairType)
     {
         return enabled && applyOverrides(repairType, opt -> opt.enabled);
     }
 
-    public void setAutoRepairEnabled(RepairType repairType, boolean enabled)
+    public void setEnabled(RepairType repairType, boolean enabled)
     {
         getOptions(repairType).enabled = enabled;
-    }
-
-    public void setRepairByKeyspace(RepairType repairType, boolean repairByKeyspace)
-    {
-        getOptions(repairType).repair_by_keyspace = repairByKeyspace;
     }
 
     public boolean getRepairByKeyspace(RepairType repairType)
@@ -197,42 +192,47 @@ public class AutoRepairConfig implements Serializable
         return applyOverrides(repairType, opt -> opt.repair_by_keyspace);
     }
 
-    public int getRepairThreads(RepairType repairType)
+    public void setRepairByKeyspace(RepairType repairType, boolean repairByKeyspace)
+    {
+        getOptions(repairType).repair_by_keyspace = repairByKeyspace;
+    }
+
+    public int getNumberOfRepairThreads(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.number_of_repair_threads);
     }
 
-    public void setRepairThreads(RepairType repairType, int repairThreads)
+    public void setNumberOfRepairThreads(RepairType repairType, int repairThreads)
     {
         getOptions(repairType).number_of_repair_threads = repairThreads;
     }
 
-    public DurationSpec.IntSecondsBound getRepairMinInterval(RepairType repairType)
+    public DurationSpec.IntSecondsBound getMinRepairInterval(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.min_repair_interval);
     }
 
-    public void setRepairMinInterval(RepairType repairType, String minRepairInterval)
+    public void setMinRepairInterval(RepairType repairType, String minRepairInterval)
     {
         getOptions(repairType).min_repair_interval = new DurationSpec.IntSecondsBound(minRepairInterval);
     }
 
-    public int getRepairSSTableCountHigherThreshold(RepairType repairType)
+    public int getSSTableUpperThreshold(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.sstable_upper_threshold);
     }
 
-    public void setRepairSSTableCountHigherThreshold(RepairType repairType, int sstableHigherThreshold)
+    public void setSSTableUpperThreshold(RepairType repairType, int sstableHigherThreshold)
     {
         getOptions(repairType).sstable_upper_threshold = sstableHigherThreshold;
     }
 
-    public DurationSpec.IntSecondsBound getAutoRepairTableMaxRepairTime(RepairType repairType)
+    public DurationSpec.IntSecondsBound getTableMaxRepairTime(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.table_max_repair_time);
     }
 
-    public void setAutoRepairTableMaxRepairTime(RepairType repairType, String autoRepairTableMaxRepairTime)
+    public void setTableMaxRepairTime(RepairType repairType, String autoRepairTableMaxRepairTime)
     {
         getOptions(repairType).table_max_repair_time = new DurationSpec.IntSecondsBound(autoRepairTableMaxRepairTime);
     }
@@ -287,14 +287,14 @@ public class AutoRepairConfig implements Serializable
         getOptions(repairType).materialized_view_repair_enabled = enabled;
     }
 
-    public void setForceRepairNewNode(RepairType repairType, boolean forceRepairNewNode)
-    {
-        getOptions(repairType).force_repair_new_node = forceRepairNewNode;
-    }
-
     public boolean getForceRepairNewNode(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.force_repair_new_node);
+    }
+
+    public void setForceRepairNewNode(RepairType repairType, boolean forceRepairNewNode)
+    {
+        getOptions(repairType).force_repair_new_node = forceRepairNewNode;
     }
 
     public ParameterizedClass getTokenRangeSplitter(RepairType repairType)
@@ -318,14 +318,14 @@ public class AutoRepairConfig implements Serializable
                                                    key -> newAutoRepairTokenRangeSplitter(key, getTokenRangeSplitter(key)));
     }
 
-    public void setInitialSchedulerDelay(RepairType repairType, String initialSchedulerDelay)
-    {
-        getOptions(repairType).initial_scheduler_delay = new DurationSpec.IntSecondsBound(initialSchedulerDelay);
-    }
-
     public DurationSpec.IntSecondsBound getInitialSchedulerDelay(RepairType repairType)
     {
         return applyOverrides(repairType, opt -> opt.initial_scheduler_delay);
+    }
+
+    public void setInitialSchedulerDelay(RepairType repairType, String initialSchedulerDelay)
+    {
+        getOptions(repairType).initial_scheduler_delay = new DurationSpec.IntSecondsBound(initialSchedulerDelay);
     }
 
     public DurationSpec.IntSecondsBound getRepairSessionTimeout(RepairType repairType)

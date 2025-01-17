@@ -66,16 +66,16 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
     public static Collection<Object[]> testCases() {
         DatabaseDescriptor.setConfig(DatabaseDescriptor.loadConfig());
         return Stream.of(
-                forEachRepairType(true, AutoRepairService.instance::setAutoRepairEnabled, config::isAutoRepairEnabled),
-                forEachRepairType(100, AutoRepairService.instance::setRepairThreads, config::getRepairThreads),
-                forEachRepairType(400, AutoRepairService.instance::setRepairSSTableCountHigherThreshold, config::getRepairSSTableCountHigherThreshold),
+                forEachRepairType(true, AutoRepairService.instance::setEnabled, config::getEnabled),
+                forEachRepairType(100, AutoRepairService.instance::setNumberOfRepairThreads, config::getNumberOfRepairThreads),
+                forEachRepairType(400, AutoRepairService.instance::setSSTableUpperThreshold, config::getSSTableUpperThreshold),
                 forEachRepairType(ImmutableSet.of("dc1", "dc2"), AutoRepairService.instance::setIgnoreDCs, config::getIgnoreDCs),
-                forEachRepairType(true, AutoRepairService.instance::setPrimaryTokenRangeOnly, config::getRepairPrimaryTokenRangeOnly),
+                forEachRepairType(true, AutoRepairService.instance::setRepairPrimaryTokenRangeOnly, config::getRepairPrimaryTokenRangeOnly),
                 forEachRepairType(600, AutoRepairService.instance::setParallelRepairPercentage, config::getParallelRepairPercentage),
                 forEachRepairType(700, AutoRepairService.instance::setParallelRepairCount, config::getParallelRepairCount),
-                forEachRepairType(true, AutoRepairService.instance::setMVRepairEnabled, config::getMaterializedViewRepairEnabled),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setRepairPriorityForHosts, AutoRepairUtils::getPriorityHosts),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setForceRepairForHosts, AutoRepairServiceSetterTest::isLocalHostForceRepair)
+                forEachRepairType(true, AutoRepairService.instance::setMaterializedViewRepairEnabled, config::getMaterializedViewRepairEnabled),
+                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setPriorityHosts, AutoRepairUtils::getPriorityHosts),
+                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setForceRepair, AutoRepairServiceSetterTest::isLocalHostForceRepair)
         ).flatMap(Function.identity()).collect(Collectors.toList());
     }
 

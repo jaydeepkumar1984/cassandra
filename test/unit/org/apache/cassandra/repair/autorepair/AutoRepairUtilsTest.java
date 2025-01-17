@@ -430,7 +430,7 @@ public class AutoRepairUtilsTest extends CQLTester
     @Test
     public void testTableMaxRepairTimeExceeded()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairTableMaxRepairTime(repairType, "0s");
+        DatabaseDescriptor.getAutoRepairConfig().setTableMaxRepairTime(repairType, "0s");
 
         assertTrue(AutoRepairUtils.tableMaxRepairTimeExceeded(repairType, 0));
     }
@@ -438,7 +438,7 @@ public class AutoRepairUtilsTest extends CQLTester
     @Test
     public void testKeyspaceMaxRepairTimeExceeded()
     {
-        DatabaseDescriptor.getAutoRepairConfig().setAutoRepairTableMaxRepairTime(repairType, "0s");
+        DatabaseDescriptor.getAutoRepairConfig().setTableMaxRepairTime(repairType, "0s");
 
         assertTrue(AutoRepairUtils.keyspaceMaxRepairTimeExceeded(repairType, 0, 1));
     }

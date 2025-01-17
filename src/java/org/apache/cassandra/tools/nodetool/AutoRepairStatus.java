@@ -45,8 +45,7 @@ public class AutoRepairStatus extends NodeTool.NodeToolCmd
         checkArgument(repairType != null, "--repair-type is required.");
         PrintStream out = probe.output().out;
 
-        AutoRepairConfig config = probe.getAutoRepairConfig();
-        if (config == null || !config.isAutoRepairSchedulingEnabled())
+        if (!probe.isAutoRepairSchedulingEnabled())
         {
             out.println("Auto-repair is not enabled");
             return;

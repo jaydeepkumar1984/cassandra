@@ -18,6 +18,7 @@
 package org.apache.cassandra.service;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.config.ParameterizedClass;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
@@ -59,7 +60,7 @@ public class AutoRepairService implements AutoRepairServiceMBean
 
     public void checkCanRun(RepairType repairType)
     {
-        if (!config.isAutoRepairSchedulingEnabled())
+        if (!config.getEnabled())
             throw new ConfigurationException("Auto-repair scheduller is disabled.");
 
         if (repairType != RepairType.INCREMENTAL)
@@ -72,47 +73,95 @@ public class AutoRepairService implements AutoRepairServiceMBean
             throw new ConfigurationException("Cannot run incremental repair while CDC replay is enabled. Set cdc_on_repair_enabled to false.");
     }
 
-    @Override
+    //@Override
     public AutoRepairConfig getAutoRepairConfig()
     {
         return config;
     }
 
     @Override
-    public void setAutoRepairEnabled(RepairType repairType, boolean enabled)
+    public boolean getEnabled()
+    {
+        return config.getEnabled();
+    }
+
+    @Override
+    public String getRepairCheckInterval()
+    {
+        return config.getRepairCheckInterval().toString();
+    }
+
+    @Override
+    public boolean getEnabled(RepairType repairType)
+    {
+        return config.getEnabled(repairType);
+    }
+
+    @Override
+    public void setEnabled(RepairType repairType, boolean enabled)
     {
         checkCanRun(repairType);
-        config.setAutoRepairEnabled(repairType, enabled);
+        config.setEnabled(repairType, enabled);
     }
 
     @Override
-    public void setRepairThreads(RepairType repairType, int repairThreads)
+    public int getNumberOfRepairThreads(RepairType repairType)
     {
-        config.setRepairThreads(repairType, repairThreads);
+        return config.getNumberOfRepairThreads(repairType);
     }
 
     @Override
-    public void setRepairPriorityForHosts(RepairType repairType, Set<InetAddressAndPort> hosts)
+    public void setNumberOfRepairThreads(RepairType repairType, int repairThreads)
     {
-        AutoRepairUtils.addPriorityHosts(repairType, hosts);
+        config.setNumberOfRepairThreads(repairType, repairThreads);
     }
 
     @Override
-    public Set<InetAddressAndPort> getRepairHostPriority(RepairType repairType)
+    public Set<InetAddressAndPort> getPriorityHosts(RepairType repairType)
     {
         return AutoRepairUtils.getPriorityHosts(repairType);
     }
 
     @Override
-    public void setForceRepairForHosts(RepairType repairType, Set<InetAddressAndPort> hosts)
+    public void setPriorityHosts(RepairType repairType, Set<InetAddressAndPort> hosts)
+    {
+        AutoRepairUtils.addPriorityHosts(repairType, hosts);
+    }
+
+    @Override
+    public Set<InetAddressAndPort> getForceRepairForHosts(RepairType repairType)
+    {
+        return null;
+    }
+
+    @Override
+    public void setForceRepair(RepairType repairType, Set<InetAddressAndPort> hosts)
     {
         AutoRepairUtils.setForceRepair(repairType, hosts);
     }
 
     @Override
-    public void setRepairMinInterval(RepairType repairType, String minRepairInterval)
+    public String getMinRepairInterval(RepairType repairType)
     {
-        config.setRepairMinInterval(repairType, minRepairInterval);
+        return config.getMinRepairInterval(repairType).toString();
+    }
+
+    @Override
+    public void setMinRepairInterval(RepairType repairType, String minRepairInterval)
+    {
+        config.setMinRepairInterval(repairType, minRepairInterval);
+    }
+
+    @Override
+    public boolean getRepairByKeyspace(RepairType repairType)
+    {
+        return config.getRepairByKeyspace(repairType);
+    }
+
+    @Override
+    public void setRepairByKeyspace(RepairType repairType, boolean repairByKeyspace)
+    {
+        config.setRepairByKeyspace(repairType, repairByKeyspace);
     }
 
     @Override
@@ -121,39 +170,84 @@ public class AutoRepairService implements AutoRepairServiceMBean
         config.startScheduler();
     }
 
-    public void setAutoRepairHistoryClearDeleteHostsBufferDuration(String duration)
+    @Override
+    public String getHistoryClearDeleteHostsBufferInterval()
     {
-        config.setAutoRepairHistoryClearDeleteHostsBufferInterval(duration);
+        return config.getHistoryClearDeleteHostsBufferInterval().toString();
     }
 
     @Override
-    public void setAutoRepairMaxRetriesCount(int retries)
+    public void setHistoryClearDeleteHostsBufferInterval(String duration)
+    {
+        config.setHistoryClearDeleteHostsBufferInterval(duration);
+    }
+
+    @Override
+    public int getRepairMaxRetries()
+    {
+        return config.getRepairMaxRetries();
+    }
+
+    @Override
+    public void setRepairMaxRetries(int retries)
     {
         config.setRepairMaxRetries(retries);
     }
 
     @Override
-    public void setAutoRepairRetryBackoff(String interval)
+    public String getRepairRetryBackoff()
+    {
+        return config.getRepairRetryBackoff().toString();
+    }
+
+    @Override
+    public void setRepairRetryBackoff(String interval)
     {
         config.setRepairRetryBackoff(interval);
     }
 
     @Override
-    public void setAutoRepairMinRepairTaskDuration(String duration)
+    public String getRepairTaskMinDuration()
+    {
+        return config.getRepairTaskMinDuration().toString();
+    }
+
+    @Override
+    public void setRepairTaskMinDuration(String duration)
     {
         config.setRepairTaskMinDuration(duration);
     }
 
+
     @Override
-    public void setRepairSSTableCountHigherThreshold(RepairType repairType, int sstableHigherThreshold)
+    public int getSSTableUpperThreshold(RepairType repairType)
     {
-        config.setRepairSSTableCountHigherThreshold(repairType, sstableHigherThreshold);
+        return config.getSSTableUpperThreshold(repairType);
+    }
+
+
+    @Override
+    public void setSSTableUpperThreshold(RepairType repairType, int sstableHigherThreshold)
+    {
+        config.setSSTableUpperThreshold(repairType, sstableHigherThreshold);
     }
 
     @Override
-    public void setAutoRepairTableMaxRepairTime(RepairType repairType, String autoRepairTableMaxRepairTime)
+    public String getTableMaxRepairTime(RepairType repairType)
     {
-        config.setAutoRepairTableMaxRepairTime(repairType, autoRepairTableMaxRepairTime);
+        return config.getTableMaxRepairTime(repairType).toString();
+    }
+
+    @Override
+    public void setTableMaxRepairTime(RepairType repairType, String autoRepairTableMaxRepairTime)
+    {
+        config.setTableMaxRepairTime(repairType, autoRepairTableMaxRepairTime);
+    }
+
+    @Override
+    public Set<String> getIgnoreDCs(RepairType repairType)
+    {
+        return config.getIgnoreDCs(repairType);
     }
 
     @Override
@@ -163,9 +257,21 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
-    public void setPrimaryTokenRangeOnly(RepairType repairType, boolean primaryTokenRangeOnly)
+    public boolean getRepairPrimaryTokenRangeOnly(RepairType repairType)
+    {
+        return config.getRepairPrimaryTokenRangeOnly(repairType);
+    }
+
+    @Override
+    public void setRepairPrimaryTokenRangeOnly(RepairType repairType, boolean primaryTokenRangeOnly)
     {
         config.setRepairPrimaryTokenRangeOnly(repairType, primaryTokenRangeOnly);
+    }
+
+    @Override
+    public int getParallelRepairPercentage(RepairType repairType)
+    {
+        return config.getParallelRepairPercentage(repairType);
     }
 
     @Override
@@ -175,16 +281,36 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
+    public int getParallelRepairCount(RepairType repairType)
+    {
+        return config.getParallelRepairCount(repairType);
+    }
+
+    @Override
     public void setParallelRepairCount(RepairType repairType, int count)
     {
         config.setParallelRepairCount(repairType, count);
     }
 
-    public void setMVRepairEnabled(RepairType repairType, boolean enabled)
+    @Override
+    public boolean getMaterializedViewRepairEnabled(RepairType repairType)
+    {
+        return config.getMaterializedViewRepairEnabled(repairType);
+    }
+
+    @Override
+    public void setMaterializedViewRepairEnabled(RepairType repairType, boolean enabled)
     {
         config.setMaterializedViewRepairEnabled(repairType, enabled);
     }
 
+    @Override
+    public String getRepairSessionTimeout(RepairType repairType)
+    {
+        return config.getRepairSessionTimeout(repairType).toString();
+    }
+
+    @Override
     public void setRepairSessionTimeout(RepairType repairType, String timeout)
     {
         config.setRepairSessionTimeout(repairType, timeout);
@@ -212,14 +338,34 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
-    public Map<String, String> getAutoRepairTokenRangeSplitterParameters(RepairType repairType)
+    public Map<String, String> getTokenRangeSplitterInstance(RepairType repairType)
     {
         return config.getTokenRangeSplitterInstance(repairType).getParameters();
     }
 
     @Override
-    public void setAutoRepairTokenRangeSplitterParameter(RepairType repairType, String key, String value)
+    public void getTokenRangeSplitterInstance(RepairType repairType, String key, String value)
     {
         config.getTokenRangeSplitterInstance(repairType).setParameter(key, value);
+    }
+
+    @Override
+    public boolean getForceRepairNewNode(RepairType repairType)
+    {
+        return config.getForceRepairNewNode(repairType);
+    }
+
+    @Override
+    public String getInitialSchedulerDelay(RepairType repairType)
+    {
+        return config.getInitialSchedulerDelay(repairType).toString();
+    }
+
+    @Override
+    public String getTokenRangeSplitter(RepairType repairType)
+    {
+        final ParameterizedClass splitterClass = config.getTokenRangeSplitter(repairType);
+        final String splitterClassName =  splitterClass.class_name != null ? splitterClass.class_name : AutoRepairConfig.DEFAULT_SPLITTER.getName();
+        return splitterClassName;
     }
 }

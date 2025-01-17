@@ -508,13 +508,13 @@ public class AutoRepairUtils
                     // clear delete_hosts if the node's delete hosts is not growing for more than two hours
                     AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
                     if (nodeHistory.deleteHosts.size() > 0
-                        && config.getAutoRepairHistoryClearDeleteHostsBufferInterval().toSeconds() < TimeUnit.MILLISECONDS.toSeconds(
+                        && config.getHistoryClearDeleteHostsBufferInterval().toSeconds() < TimeUnit.MILLISECONDS.toSeconds(
                     currentTimeMillis() - nodeHistory.deleteHostsUpdateTime
                     ))
                     {
                         clearDeleteHosts(repairType, nodeHistory.hostId);
                         logger.info("Delete hosts for {} for repair type {} has not been updated for more than {} seconds. Delete hosts has been cleared. Delete hosts before clear {}"
-                        , nodeHistory.hostId, repairType, config.getAutoRepairHistoryClearDeleteHostsBufferInterval(), nodeHistory.deleteHosts);
+                        , nodeHistory.hostId, repairType, config.getHistoryClearDeleteHostsBufferInterval(), nodeHistory.deleteHosts);
                     }
                     else if (!hostIdsInCurrentRing.contains(nodeHistory.hostId))
                     {
@@ -821,14 +821,14 @@ public class AutoRepairUtils
     {
         long tableRepairTimeSoFar = TimeUnit.MILLISECONDS.toSeconds
                                                          (currentTimeMillis() - startTime);
-        return AutoRepairService.instance.getAutoRepairConfig().getAutoRepairTableMaxRepairTime(repairType).toSeconds() <
+        return AutoRepairService.instance.getAutoRepairConfig().getTableMaxRepairTime(repairType).toSeconds() <
                tableRepairTimeSoFar;
     }
 
     public static boolean keyspaceMaxRepairTimeExceeded(RepairType repairType, long startTime, int numOfTablesToBeRepaired)
     {
         long keyspaceRepairTimeSoFar = TimeUnit.MILLISECONDS.toSeconds((currentTimeMillis() - startTime));
-        return (long) AutoRepairService.instance.getAutoRepairConfig().getAutoRepairTableMaxRepairTime(repairType).toSeconds() *
+        return (long) AutoRepairService.instance.getAutoRepairConfig().getTableMaxRepairTime(repairType).toSeconds() *
                numOfTablesToBeRepaired < keyspaceRepairTimeSoFar;
     }
 
@@ -851,10 +851,10 @@ public class AutoRepairUtils
     public static void runRepairOnNewlyBootstrappedNodeIfEnabled()
     {
         AutoRepairConfig repairConfig = DatabaseDescriptor.getAutoRepairConfig();
-        if (repairConfig.isAutoRepairSchedulingEnabled())
+        if (repairConfig.getEnabled())
         {
             for (AutoRepairConfig.RepairType rType : AutoRepairConfig.RepairType.values())
-                if (repairConfig.isAutoRepairEnabled(rType) && repairConfig.getForceRepairNewNode(rType))
+                if (repairConfig.getEnabled(rType) && repairConfig.getForceRepairNewNode(rType))
                     AutoRepairUtils.setForceRepairNewNode(rType);
         }
     }
