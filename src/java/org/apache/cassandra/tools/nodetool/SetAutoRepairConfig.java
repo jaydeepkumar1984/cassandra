@@ -69,7 +69,7 @@ public class SetAutoRepairConfig extends NodeToolCmd
         String paramType = args.get(0);
         String paramVal = args.get(1);
 
-        if (!probe.isAutoRepairSchedulingEnabled() && !paramType.equalsIgnoreCase("start_scheduler"))
+        if (!probe.getEnabled() && !paramType.equalsIgnoreCase("start_scheduler"))
         {
             out.println("Auto-repair is not enabled");
             return;
@@ -85,16 +85,16 @@ public class SetAutoRepairConfig extends NodeToolCmd
                 }
                 return;
             case "history_clear_delete_hosts_buffer_interval":
-                probe.setAutoRepairHistoryClearDeleteHostsBufferDuration(paramVal);
+                probe.setHistoryClearDeleteHostsBufferInterval(paramVal);
                 return;
             case "repair_max_retries":
-                probe.setAutoRepairMaxRetriesCount(Integer.parseInt(paramVal));
+                probe.setRepairMaxRetries(Integer.parseInt(paramVal));
                 return;
             case "repair_retry_backoff":
-                probe.setAutoRepairRetryBackoff(paramVal);
+                probe.setRepairRetryBackoff(paramVal);
                 return;
             case "min_repair_task_duration":
-                probe.setAutoRepairMinRepairTaskDuration(paramVal);
+                probe.setRepairTaskMinDuration(paramVal);
                 return;
             default:
                 // proceed to options that require --repair-type option
@@ -116,32 +116,32 @@ public class SetAutoRepairConfig extends NodeToolCmd
         switch (paramType)
         {
             case "enabled":
-                probe.setAutoRepairEnabled(repairType, Boolean.parseBoolean(paramVal));
+                probe.setEnabled(repairType, Boolean.parseBoolean(paramVal));
                 break;
             case "number_of_repair_threads":
-                probe.setRepairThreads(repairType, Integer.parseInt(paramVal));
+                probe.setNumberOfRepairThreads(repairType, Integer.parseInt(paramVal));
                 break;
             case "min_repair_interval":
-                probe.setRepairMinInterval(repairType, paramVal);
+                probe.setMinRepairInterval(repairType, paramVal);
                 break;
             case "sstable_upper_threshold":
-                probe.setRepairSSTableCountHigherThreshold(repairType, Integer.parseInt(paramVal));
+                probe.setSSTableUpperThreshold(repairType, Integer.parseInt(paramVal));
                 break;
             case "table_max_repair_time":
-                probe.setAutoRepairTableMaxRepairTime(repairType, paramVal);
+                probe.setTableMaxRepairTime(repairType, paramVal);
                 break;
             case "priority_hosts":
                 hosts = retrieveHosts(paramVal);
                 if (!hosts.isEmpty())
                 {
-                    probe.setRepairPriorityForHosts(repairType, hosts);
+                    probe.setPriorityHosts(repairType, hosts);
                 }
                 break;
             case "forcerepair_hosts":
                 hosts = retrieveHosts(paramVal);
                 if (!hosts.isEmpty())
                 {
-                    probe.setForceRepairForHosts(repairType, hosts);
+                    probe.setForceRepair(repairType, hosts);
                 }
                 break;
             case "ignore_dcs":
@@ -150,10 +150,10 @@ public class SetAutoRepairConfig extends NodeToolCmd
                 {
                     ignoreDCs.add(dc);
                 }
-                probe.setAutoRepairIgnoreDCs(repairType, ignoreDCs);
+                probe.setIgnoreDCs(repairType, ignoreDCs);
                 break;
             case "repair_primary_token_range_only":
-                probe.setPrimaryTokenRangeOnly(repairType, Boolean.parseBoolean(paramVal));
+                probe.setRepairPrimaryTokenRangeOnly(repairType, Boolean.parseBoolean(paramVal));
                 break;
             case "parallel_repair_count":
                 probe.setParallelRepairCount(repairType, Integer.parseInt(paramVal));

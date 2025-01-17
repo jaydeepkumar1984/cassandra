@@ -39,7 +39,7 @@ public class GetAutoRepairConfig extends NodeToolCmd
     public void execute(NodeProbe probe)
     {
 //        AutoRepairConfig config = probe.getAutoRepairConfig();
-        if (!probe.isAutoRepairSchedulingEnabled())
+        if (!probe.getEnabled())
         {
             out.println("Auto-repair is not enabled");
             return;
@@ -51,7 +51,7 @@ public class GetAutoRepairConfig extends NodeToolCmd
         appendConfig(sb, "repair_max_retries", probe.getRepairMaxRetries());
         appendConfig(sb, "repair_retry_backoff", probe.getRepairRetryBackoff());
         appendConfig(sb, "repair_task_min_duration", probe.getRepairTaskMinDuration());
-        appendConfig(sb, "history_clear_delete_hosts_buffer_interval", probe.getAutoRepairHistoryClearDeleteHostsBufferInterval());
+        appendConfig(sb, "history_clear_delete_hosts_buffer_interval", probe.getHistoryClearDeleteHostsBufferInterval());
         for (RepairType repairType : RepairType.values())
         {
             sb.append(formatRepairTypeConfig(probe, repairType));
@@ -64,26 +64,26 @@ public class GetAutoRepairConfig extends NodeToolCmd
     {
         StringBuilder sb = new StringBuilder();
         sb.append("\nconfiguration for repair_type: ").append(repairType.getConfigName());
-        sb.append("\n\tenabled: ").append(probe.isAutoRepairEnabled(repairType));
+        sb.append("\n\tenabled: ").append(probe.getEnabled(repairType));
         // Only show configuration if enabled
-        if (probe.isAutoRepairEnabled(repairType))
+        if (probe.getEnabled(repairType))
         {
-            Set<InetAddressAndPort> priorityHosts = probe.getRepairPriorityForHosts(repairType);
+            Set<InetAddressAndPort> priorityHosts = probe.getPriorityHosts(repairType);
             if (!priorityHosts.isEmpty())
             {
                 appendConfig(sb, "priority_hosts", Joiner.on(',').skipNulls().join(priorityHosts));
             }
 
-            appendConfig(sb , "min_repair_interval", probe.getRepairMinInterval(repairType));
+            appendConfig(sb , "min_repair_interval", probe.getMinRepairInterval(repairType));
             appendConfig(sb , "repair_by_keyspace", probe.getRepairByKeyspace(repairType));
-            appendConfig(sb , "number_of_repair_threads", probe.getRepairThreads(repairType));
-            appendConfig(sb , "sstable_upper_threshold", probe.getRepairSSTableCountHigherThreshold(repairType));
-            appendConfig(sb , "table_max_repair_time", probe.getAutoRepairTableMaxRepairTime(repairType));
+            appendConfig(sb , "number_of_repair_threads", probe.getNumberOfRepairThreads(repairType));
+            appendConfig(sb , "sstable_upper_threshold", probe.getSSTableUpperThreshold(repairType));
+            appendConfig(sb , "table_max_repair_time", probe.getTableMaxRepairTime(repairType));
             appendConfig(sb , "ignore_dcs", probe.getIgnoreDCs(repairType));
             appendConfig(sb , "repair_primary_token_range_only", probe.getRepairPrimaryTokenRangeOnly(repairType));
             appendConfig(sb , "parallel_repair_count", probe.getParallelRepairCount(repairType));
             appendConfig(sb , "parallel_repair_percentage", probe.getParallelRepairPercentage(repairType));
-            appendConfig(sb , "materialized_view_repair_enabled", probe.getMVRepairEnabled(repairType));
+            appendConfig(sb , "materialized_view_repair_enabled", probe.getMaterializedViewRepairEnabled(repairType));
             appendConfig(sb , "initial_scheduler_delay", probe.getInitialSchedulerDelay(repairType));
             appendConfig(sb , "repair_session_timeout", probe.getRepairSessionTimeout(repairType));
             appendConfig(sb , "force_repair_new_node", probe.getForceRepairNewNode(repairType));
@@ -91,7 +91,7 @@ public class GetAutoRepairConfig extends NodeToolCmd
             final String splitterClassName = probe.getTokenRangeSplitter(repairType);
             //final String splitterClassName =  splitterClass.class_name != null ? splitterClass.class_name : AutoRepairConfig.DEFAULT_SPLITTER.getName();
             appendConfig(sb, "token_range_splitter", splitterClassName);
-            Map<String, String> tokenRangeSplitterParameters = probe.getAutoRepairTokenRangeSplitterParameters(repairType);
+            Map<String, String> tokenRangeSplitterParameters = probe.getTokenRangeSplitterInstance(repairType);
             if (!tokenRangeSplitterParameters.isEmpty())
             {
                 for (Map.Entry<String, String> param : tokenRangeSplitterParameters.entrySet())
