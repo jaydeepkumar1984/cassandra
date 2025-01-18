@@ -57,10 +57,10 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
     public T arg;
 
     @Parameterized.Parameter(2)
-    public BiConsumer<AutoRepairConfig.RepairType, T> setter;
+    public BiConsumer<String, T> setter;
 
     @Parameterized.Parameter(3)
-    public Function<AutoRepairConfig.RepairType, T> getter;
+    public Function<String, T> getter;
 
     @Parameterized.Parameters(name = "{index}: repairType={0}, arg={1}")
     public static Collection<Object[]> testCases() {
@@ -91,10 +91,10 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
         return ImmutableSet.of();
     }
 
-    private static <T> Stream<Object[]> forEachRepairType(T arg, BiConsumer<AutoRepairConfig.RepairType, T> setter, Function<AutoRepairConfig.RepairType, T> getter) {
+    private static <T> Stream<Object[]> forEachRepairType(T arg, BiConsumer<String, T> setter, Function<AutoRepairConfig.RepairType, T> getter) {
         Object[][] testCases = new Object[AutoRepairConfig.RepairType.values().length][4];
         for (AutoRepairConfig.RepairType repairType : AutoRepairConfig.RepairType.values()) {
-            testCases[repairType.ordinal()] = new Object[]{repairType, arg, setter, getter};
+            testCases[repairType.ordinal()] = new Object[]{repairType.getConfigName(), arg, setter, getter};
         }
 
         return Arrays.stream(testCases);
@@ -125,7 +125,7 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
     public void testSettersTest() {
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(false);
         DatabaseDescriptor.setCDCOnRepairEnabled(false);
-        setter.accept(repairType, arg);
-        assertEquals(arg, getter.apply(repairType));
+        setter.accept(repairType.getConfigName(), arg);
+        assertEquals(arg, getter.apply(repairType.getConfigName()));
     }
 }

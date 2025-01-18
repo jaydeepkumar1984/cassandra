@@ -90,6 +90,20 @@ public class AutoRepairConfig implements Serializable
             return configName;
         }
 
+        public static RepairType fromString(String value) {
+            if (value == null || value.trim().isEmpty()) {
+                throw new IllegalArgumentException("Value cannot be null or empty.");
+            }
+
+            for (RepairType repairType : values()) {
+                if (repairType.configName.equals(LocalizeString.toLowerCaseLocalized(value))) {
+                    return repairType;
+                }
+            }
+
+            throw new IllegalArgumentException("Invalid RepairType: " + value);
+        }
+
         public static AutoRepairState getAutoRepairState(RepairType repairType)
         {
             switch (repairType)

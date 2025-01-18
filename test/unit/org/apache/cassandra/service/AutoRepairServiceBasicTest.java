@@ -84,14 +84,14 @@ public class AutoRepairServiceBasicTest extends CQLTester {
     public void testSetAutoRepairEnabledThrowsWithSchedulerDisabled() {
         autoRepairService.config = new AutoRepairConfig(false);
 
-        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test(expected = ConfigurationException.class)
     public void testSetAutoRepairEnabledThrowsForIRWithMVReplay() {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(true);
-        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test
@@ -99,20 +99,20 @@ public class AutoRepairServiceBasicTest extends CQLTester {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setMaterializedViewsEnabled(true);
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(false);
-        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test(expected = ConfigurationException.class)
     public void testSetAutoRepairEnabledThrowsForIRWithCDCReplay() {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setCDCOnRepairEnabled(true);
-        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 
     @Test
     public void testSetAutoRepairEnabledDoesNotThrowForIRWithCDCReplayDisabled() {
         autoRepairService.config = new AutoRepairConfig(true);
         DatabaseDescriptor.setCDCEnabled(true);
-        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
+        autoRepairService.setEnabled(AutoRepairConfig.RepairType.INCREMENTAL.getConfigName(), true);
     }
 }

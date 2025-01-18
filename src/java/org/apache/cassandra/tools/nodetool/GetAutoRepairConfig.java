@@ -54,16 +54,16 @@ public class GetAutoRepairConfig extends NodeToolCmd
         appendConfig(sb, "history_clear_delete_hosts_buffer_interval", probe.getHistoryClearDeleteHostsBufferInterval());
         for (RepairType repairType : RepairType.values())
         {
-            sb.append(formatRepairTypeConfig(probe, repairType));
+            sb.append(formatRepairTypeConfig(probe, repairType.getConfigName()));
         }
 
         out.println(sb);
     }
 
-    private String formatRepairTypeConfig(NodeProbe probe, RepairType repairType)
+    private String formatRepairTypeConfig(NodeProbe probe, String repairType)
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("\nconfiguration for repair_type: ").append(repairType.getConfigName());
+        sb.append("\nconfiguration for repair_type: ").append(repairType);
         sb.append("\n\tenabled: ").append(probe.getEnabled(repairType));
         // Only show configuration if enabled
         if (probe.getEnabled(repairType))

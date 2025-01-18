@@ -25,7 +25,6 @@ import com.google.common.annotations.VisibleForTesting;
 
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
-import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.cassandra.tools.nodetool.formatter.TableBuilder;
@@ -37,7 +36,8 @@ public class AutoRepairStatus extends NodeTool.NodeToolCmd
 {
     @VisibleForTesting
     @Option(title = "repair type", name = { "-t", "--repair-type" }, description = "Repair type")
-    protected AutoRepairConfig.RepairType repairType;
+    protected String repairType;
+
 
     @Override
     public void execute(NodeProbe probe)

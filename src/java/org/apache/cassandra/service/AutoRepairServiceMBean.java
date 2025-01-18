@@ -18,7 +18,6 @@
 package org.apache.cassandra.service;
 
 import org.apache.cassandra.locator.InetAddressAndPort;
-import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 
 import java.util.Map;
 import java.util.Set;
@@ -41,75 +40,75 @@ public interface AutoRepairServiceMBean
     public String getRepairTaskMinDuration();
     public void setRepairTaskMinDuration(String duration);
 
-    public boolean getEnabled(RepairType repairType);
+    public boolean getEnabled(String repairType);
     /**
      * Enable or disable auto-repair for a given repair type
      */
-    public void setEnabled(RepairType repairType, boolean enabled);
+    public void setEnabled(String repairType, boolean enabled);
 
-    public int getNumberOfRepairThreads(RepairType repairType);
+    public int getNumberOfRepairThreads(String repairType);
 
-    public void setNumberOfRepairThreads(RepairType repairType, int repairThreads);
+    public void setNumberOfRepairThreads(String repairType, int repairThreads);
 
-    public Set<InetAddressAndPort> getPriorityHosts(RepairType repairType);
+    public Set<InetAddressAndPort> getPriorityHosts(String repairType);
 
-    void setPriorityHosts(RepairType repairType, Set<InetAddressAndPort> host);
+    void setPriorityHosts(String repairType, Set<InetAddressAndPort> host);
 
-    public Set<InetAddressAndPort> getForceRepairForHosts(RepairType repairType);
+    public Set<InetAddressAndPort> getForceRepairForHosts(String repairType);
 
-    public void setForceRepair(RepairType repairType, Set<InetAddressAndPort> host);
+    public void setForceRepair(String repairType, Set<InetAddressAndPort> host);
 
-    public String getMinRepairInterval(RepairType repairType);
+    public String getMinRepairInterval(String repairType);
 
-    public void setMinRepairInterval(RepairType repairType, String minRepairInterval);
+    public void setMinRepairInterval(String repairType, String minRepairInterval);
 
 
-    boolean getRepairByKeyspace(RepairType repairType);
+    boolean getRepairByKeyspace(String repairType);
 
-    void setRepairByKeyspace(RepairType repairType, boolean repairByKeyspace);
+    void setRepairByKeyspace(String repairType, boolean repairByKeyspace);
 
 
     void startScheduler();
 
 
-    public int getSSTableUpperThreshold(RepairType repairType);
-    public void setSSTableUpperThreshold(RepairType repairType, int ssTableHigherThreshold);
+    public int getSSTableUpperThreshold(String repairType);
+    public void setSSTableUpperThreshold(String repairType, int ssTableHigherThreshold);
 
-    public String getTableMaxRepairTime(RepairType repairType);
-    public void setTableMaxRepairTime(RepairType repairType, String autoRepairTableMaxRepairTime);
+    public String getTableMaxRepairTime(String repairType);
+    public void setTableMaxRepairTime(String repairType, String autoRepairTableMaxRepairTime);
 
-    public Set<String> getIgnoreDCs(RepairType repairType);
-    public void setIgnoreDCs(RepairType repairType, Set<String> ignorDCs);
+    public Set<String> getIgnoreDCs(String repairType);
+    public void setIgnoreDCs(String repairType, Set<String> ignorDCs);
 
-    public boolean getRepairPrimaryTokenRangeOnly(RepairType repairType);
-    public void setRepairPrimaryTokenRangeOnly(RepairType repairType, boolean primaryTokenRangeOnly);
+    public boolean getRepairPrimaryTokenRangeOnly(String repairType);
+    public void setRepairPrimaryTokenRangeOnly(String repairType, boolean primaryTokenRangeOnly);
 
-    public int getParallelRepairPercentage(RepairType repairType);
-    public void setParallelRepairPercentage(RepairType repairType, int percentage);
+    public int getParallelRepairPercentage(String repairType);
+    public void setParallelRepairPercentage(String repairType, int percentage);
 
-    public int getParallelRepairCount(RepairType repairType);
-    public void setParallelRepairCount(RepairType repairType, int count);
+    public int getParallelRepairCount(String repairType);
+    public void setParallelRepairCount(String repairType, int count);
 
-    public boolean getMaterializedViewRepairEnabled(RepairType repairType);
-    public void setMaterializedViewRepairEnabled(RepairType repairType, boolean enabled);
+    public boolean getMaterializedViewRepairEnabled(String repairType);
+    public void setMaterializedViewRepairEnabled(String repairType, boolean enabled);
 
     //public AutoRepairConfig getAutoRepairConfig();
 //    public Map<String, String> getTopLevelSettings();
 //
 //    public Map<String, Map<String, String>> getRepairSpecificSettings();
 
-    public String getRepairSessionTimeout(RepairType repairType);
-    public void setRepairSessionTimeout(RepairType repairType, String timeout);
+    public String getRepairSessionTimeout(String repairType);
+    public void setRepairSessionTimeout(String repairType, String timeout);
 
-    public Set<String> getOnGoingRepairHostIds(RepairType rType);
+    public Set<String> getOnGoingRepairHostIds(String rType);
 
-    public Map<String, String> getTokenRangeSplitterInstance(RepairType repairType);
+    public Map<String, String> getTokenRangeSplitterInstance(String repairType);
 
-    public void getTokenRangeSplitterInstance(RepairType repairType, String key, String value);
+    public void getTokenRangeSplitterInstance(String repairType, String key, String value);
 
-    boolean getForceRepairNewNode(RepairType repairType);
+    boolean getForceRepairNewNode(String repairType);
 
-    String getInitialSchedulerDelay(RepairType repairType);
+    String getInitialSchedulerDelay(String repairType);
 
-    String getTokenRangeSplitter(RepairType repairType);
+    String getTokenRangeSplitter(String repairType);
 }

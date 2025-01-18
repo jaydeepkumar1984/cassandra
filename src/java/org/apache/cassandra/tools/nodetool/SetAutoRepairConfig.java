@@ -24,10 +24,8 @@ import io.airlift.airline.Arguments;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
 import org.apache.cassandra.locator.InetAddressAndPort;
-import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
-import org.apache.cassandra.utils.LocalizeString;
 
 import java.io.PrintStream;
 import java.net.UnknownHostException;
@@ -55,7 +53,7 @@ public class SetAutoRepairConfig extends NodeToolCmd
 
     @VisibleForTesting
     @Option(title = "repair type", name = { "-t", "--repair-type" }, description = "Repair type")
-    protected String repairTypeStr;
+    protected String repairType;
 
     @VisibleForTesting
     protected PrintStream out = System.out;
@@ -102,8 +100,7 @@ public class SetAutoRepairConfig extends NodeToolCmd
         }
 
         // options below require --repair-type option
-        checkArgument(repairTypeStr != null, "--repair-type is required for this parameter.");
-        final RepairType repairType = RepairType.valueOf(LocalizeString.toUpperCaseLocalized(repairTypeStr));
+        checkArgument(repairType != null, "--repair-type is required for this parameter.");
 
         if(paramType.startsWith(TOKEN_RANGE_SPLITTER_PROPERTY_PREFIX))
         {

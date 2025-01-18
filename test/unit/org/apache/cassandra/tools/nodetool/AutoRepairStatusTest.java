@@ -85,7 +85,7 @@ public class AutoRepairStatusTest
     @Test
     public void testExecuteWithNoNodes()
     {
-        cmd.repairType = repairType;
+        cmd.repairType = repairType.getConfigName();
 
         cmd.execute(probe);
         assertEquals("Active Repairs\n" +
@@ -95,8 +95,8 @@ public class AutoRepairStatusTest
     @Test
     public void testExecute()
     {
-        when(probe.getOnGoingRepairHostIds(repairType)).thenReturn(ImmutableSet.of("host1", "host2", "host3", "host4"));
-        cmd.repairType = repairType;
+        when(probe.getOnGoingRepairHostIds(repairType.getConfigName())).thenReturn(ImmutableSet.of("host1", "host2", "host3", "host4"));
+        cmd.repairType = repairType.getConfigName();
 
         cmd.execute(probe);
 
