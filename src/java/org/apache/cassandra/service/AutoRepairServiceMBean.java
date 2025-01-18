@@ -17,8 +17,6 @@
  */
 package org.apache.cassandra.service;
 
-import org.apache.cassandra.locator.InetAddressAndPort;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -50,13 +48,13 @@ public interface AutoRepairServiceMBean
 
     public void setNumberOfRepairThreads(String repairType, int repairThreads);
 
-    public Set<InetAddressAndPort> getPriorityHosts(String repairType);
+    public Set<String> getPriorityHosts(String repairType);
 
-    void setPriorityHosts(String repairType, Set<InetAddressAndPort> host);
+    void setPriorityHosts(String repairType, Set<String> host);
 
-    public Set<InetAddressAndPort> getForceRepairForHosts(String repairType);
+    public Set<String> getForceRepairForHosts(String repairType);
 
-    public void setForceRepair(String repairType, Set<InetAddressAndPort> host);
+    public void setForceRepair(String repairType, Set<String> host);
 
     public String getMinRepairInterval(String repairType);
 

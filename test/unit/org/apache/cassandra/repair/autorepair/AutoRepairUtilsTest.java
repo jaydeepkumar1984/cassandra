@@ -412,11 +412,11 @@ public class AutoRepairUtilsTest extends CQLTester
         SchemaConstants.DISTRIBUTED_KEYSPACE_NAME, SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY,
         repairType.toString(), hostId));
 
-        Set<InetAddressAndPort> hosts = AutoRepairUtils.getPriorityHosts(repairType);
+        Set<String> hosts = AutoRepairUtils.getPriorityHosts(repairType);
 
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
-        assertTrue(hosts.contains(localEndpoint));
+        assertTrue(hosts.contains(localEndpoint.toString(false)));
     }
 
     @Test

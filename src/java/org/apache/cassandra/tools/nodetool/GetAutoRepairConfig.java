@@ -20,7 +20,6 @@ package org.apache.cassandra.tools.nodetool;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import io.airlift.airline.Command;
-import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
@@ -68,7 +67,7 @@ public class GetAutoRepairConfig extends NodeToolCmd
         // Only show configuration if enabled
         if (probe.getEnabled(repairType))
         {
-            Set<InetAddressAndPort> priorityHosts = probe.getPriorityHosts(repairType);
+            Set<String> priorityHosts = probe.getPriorityHosts(repairType);
             if (!priorityHosts.isEmpty())
             {
                 appendConfig(sb, "priority_hosts", Joiner.on(',').skipNulls().join(priorityHosts));

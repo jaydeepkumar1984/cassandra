@@ -26,11 +26,13 @@ import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 import org.apache.cassandra.repair.autorepair.AutoRepairUtils;
 import org.apache.cassandra.utils.MBeanWrapper;
 
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -117,27 +119,43 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
-    public Set<InetAddressAndPort> getPriorityHosts(String repairType)
+    public Set<String> getPriorityHosts(String repairType)
     {
         return AutoRepairUtils.getPriorityHosts(RepairType.fromString(repairType));
     }
 
-    @Override
-    public void setPriorityHosts(String repairType, Set<InetAddressAndPort> hosts)
+    private Set<InetAddressAndPort> convertToHosts(Set<String> hostsStr)
     {
-        AutoRepairUtils.addPriorityHosts(RepairType.fromString(repairType), hosts);
+        return hostsStr.stream()
+                       .map(hostname -> {
+                           try
+                           {
+                               return InetAddressAndPort.getByName(hostname);
+                           }
+                           catch (UnknownHostException e)
+                           {
+                               throw new RuntimeException(e);
+                           }
+                       })
+                       .collect(Collectors.toSet());
     }
 
     @Override
-    public Set<InetAddressAndPort> getForceRepairForHosts(String repairType)
+    public void setPriorityHosts(String repairType, Set<String> hostsStr)
+    {
+        AutoRepairUtils.addPriorityHosts(RepairType.fromString(repairType), convertToHosts(hostsStr));
+    }
+
+    @Override
+    public Set<String> getForceRepairForHosts(String repairType)
     {
         return null;
     }
 
     @Override
-    public void setForceRepair(String repairType, Set<InetAddressAndPort> hosts)
+    public void setForceRepair(String repairType, Set<String> hostsStr)
     {
-        AutoRepairUtils.setForceRepair(RepairType.fromString(repairType), hosts);
+        AutoRepairUtils.setForceRepair(RepairType.fromString(repairType), convertToHosts(hostsStr));
     }
 
     @Override

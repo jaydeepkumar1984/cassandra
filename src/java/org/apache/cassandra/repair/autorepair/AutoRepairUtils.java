@@ -780,12 +780,12 @@ public class AutoRepairUtils
         return Collections.emptySet();
     }
 
-    public static Set<InetAddressAndPort> getPriorityHosts(RepairType repairType)
+    public static Set<String> getPriorityHosts(RepairType repairType)
     {
-        Set<InetAddressAndPort> hosts = new HashSet<>();
+        Set<String> hosts = new HashSet<>();
         for (UUID hostId : getPriorityHostIds(repairType))
         {
-            hosts.add(ClusterMetadata.current().directory.addresses.get(NodeId.fromUUID(hostId)).broadcastAddress);
+            hosts.add(ClusterMetadata.current().directory.addresses.get(NodeId.fromUUID(hostId)).broadcastAddress.toString(false));
         }
         return hosts;
     }

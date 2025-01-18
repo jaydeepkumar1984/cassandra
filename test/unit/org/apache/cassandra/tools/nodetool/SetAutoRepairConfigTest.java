@@ -241,7 +241,7 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setPriorityHosts(repairType.getConfigName(), ImmutableSet.of(localEndpoint, otherEndpoint));
+            verify(probe, times(1)).setPriorityHosts(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false), otherEndpoint.toString(false)));
         }
 
         @Test
@@ -252,7 +252,7 @@ public class SetAutoRepairConfigTest
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setForceRepair(repairType.getConfigName(), ImmutableSet.of(localEndpoint, otherEndpoint));
+            verify(probe, times(1)).setForceRepair(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false), otherEndpoint.toString(false)));
         }
     }
 

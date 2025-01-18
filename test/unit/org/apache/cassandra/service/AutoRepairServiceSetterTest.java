@@ -74,19 +74,19 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
                 forEachRepairType(600, AutoRepairService.instance::setParallelRepairPercentage, config::getParallelRepairPercentage),
                 forEachRepairType(700, AutoRepairService.instance::setParallelRepairCount, config::getParallelRepairCount),
                 forEachRepairType(true, AutoRepairService.instance::setMaterializedViewRepairEnabled, config::getMaterializedViewRepairEnabled),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setPriorityHosts, AutoRepairUtils::getPriorityHosts),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setForceRepair, AutoRepairServiceSetterTest::isLocalHostForceRepair)
+                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost().toString(false)), AutoRepairService.instance::setPriorityHosts, AutoRepairUtils::getPriorityHosts),
+                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost().toString()), AutoRepairService.instance::setForceRepair, AutoRepairServiceSetterTest::isLocalHostForceRepair)
         ).flatMap(Function.identity()).collect(Collectors.toList());
     }
 
-    private static Set<InetAddressAndPort> isLocalHostForceRepair(AutoRepairConfig.RepairType type) {
+    private static Set<String> isLocalHostForceRepair(AutoRepairConfig.RepairType type) {
         UUID hostId = StorageService.instance.getHostIdForEndpoint(InetAddressAndPort.getLocalHost());
         UntypedResultSet resultSet = QueryProcessor.executeInternal(String.format(
                 "SELECT force_repair FROM %s.%s WHERE host_id = %s and repair_type = '%s'",
                 SchemaConstants.DISTRIBUTED_KEYSPACE_NAME, SystemDistributedKeyspace.AUTO_REPAIR_HISTORY, hostId, type));
 
         if (!resultSet.isEmpty() && resultSet.one().getBoolean("force_repair")) {
-            return ImmutableSet.of(InetAddressAndPort.getLocalHost());
+            return ImmutableSet.of(InetAddressAndPort.getLocalHost().toString(false));
         }
         return ImmutableSet.of();
     }

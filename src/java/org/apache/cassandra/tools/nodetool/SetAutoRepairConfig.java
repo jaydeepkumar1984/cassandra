@@ -23,16 +23,16 @@ import com.google.common.base.Splitter;
 import io.airlift.airline.Arguments;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
-import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
 
 import java.io.PrintStream;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -109,7 +109,6 @@ public class SetAutoRepairConfig extends NodeToolCmd
             return;
         }
 
-        Set<InetAddressAndPort> hosts;
         switch (paramType)
         {
             case "enabled":
@@ -128,17 +127,17 @@ public class SetAutoRepairConfig extends NodeToolCmd
                 probe.setTableMaxRepairTime(repairType, paramVal);
                 break;
             case "priority_hosts":
-                hosts = retrieveHosts(paramVal);
-                if (!hosts.isEmpty())
+                if (!paramVal.isEmpty())
                 {
-                    probe.setPriorityHosts(repairType, hosts);
+                    probe.setPriorityHosts(repairType, Arrays.stream(paramVal.split(","))
+                                                             .collect(Collectors.toSet()));
                 }
                 break;
             case "forcerepair_hosts":
-                hosts = retrieveHosts(paramVal);
-                if (!hosts.isEmpty())
+                if (!paramVal.isEmpty())
                 {
-                    probe.setForceRepair(repairType, hosts);
+                    probe.setForceRepair(repairType, Arrays.stream(paramVal.split(","))
+                                                           .collect(Collectors.toSet()));
                 }
                 break;
             case "ignore_dcs":
@@ -170,23 +169,5 @@ public class SetAutoRepairConfig extends NodeToolCmd
             default:
                 throw new IllegalArgumentException("Unknown parameter: " + paramType);
         }
-    }
-
-    private Set<InetAddressAndPort> retrieveHosts(String paramVal)
-    {
-        Set<InetAddressAndPort> hosts = new HashSet<>();
-        for (String host : Splitter.on(',').split(paramVal))
-        {
-            try
-            {
-                hosts.add(InetAddressAndPort.getByName(host));
-            }
-            catch (UnknownHostException e)
-            {
-                out.println("invalid ip address: " + host);
-            }
-        }
-
-        return hosts;
     }
 }

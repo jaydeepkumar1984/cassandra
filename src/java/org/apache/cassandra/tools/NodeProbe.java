@@ -94,14 +94,12 @@ import org.apache.cassandra.hints.HintsServiceMBean;
 import org.apache.cassandra.locator.DynamicEndpointSnitchMBean;
 import org.apache.cassandra.locator.EndpointSnitchInfoMBean;
 import org.apache.cassandra.metrics.CIDRAuthorizerMetrics;
-import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.metrics.CassandraMetricsRegistry;
 import org.apache.cassandra.metrics.StorageMetrics;
 import org.apache.cassandra.metrics.TableMetrics;
 import org.apache.cassandra.metrics.ThreadPoolMetrics;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.net.MessagingServiceMBean;
-import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.apache.cassandra.service.ActiveRepairServiceMBean;
 import org.apache.cassandra.service.AutoRepairService;
 import org.apache.cassandra.service.AutoRepairServiceMBean;
@@ -2441,17 +2439,17 @@ public class NodeProbe implements AutoCloseable
         autoRepairProxy.setNumberOfRepairThreads(repairType, repairThreads);
     }
 
-    public void setPriorityHosts(String repairType, Set<InetAddressAndPort> hosts)
+    public void setPriorityHosts(String repairType, Set<String> hosts)
     {
         autoRepairProxy.setPriorityHosts(repairType, hosts);
     }
 
-    public Set<InetAddressAndPort> getPriorityHosts(String repairType)
+    public Set<String> getPriorityHosts(String repairType)
     {
         return autoRepairProxy.getPriorityHosts(repairType);
     }
 
-    public void setForceRepair(String repairType, Set<InetAddressAndPort> hosts){
+    public void setForceRepair(String repairType, Set<String> hosts){
         autoRepairProxy.setForceRepair(repairType, hosts);
     }
 
