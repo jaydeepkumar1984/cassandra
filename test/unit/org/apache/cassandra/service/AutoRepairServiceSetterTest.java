@@ -28,12 +28,14 @@ import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.apache.cassandra.repair.autorepair.AutoRepairUtils;
 import org.apache.cassandra.schema.SchemaConstants;
 import org.apache.cassandra.schema.SystemDistributedKeyspace;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
@@ -60,10 +62,12 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
     public BiConsumer<String, T> setter;
 
     @Parameterized.Parameter(3)
-    public Function<String, T> getter;
+    public Function<AutoRepairConfig.RepairType, T> getter;
 
     @Parameterized.Parameters(name = "{index}: repairType={0}, arg={1}")
-    public static Collection<Object[]> testCases() {
+    public static Collection<Object[]> testCases() throws UnknownHostException
+    {
+        InetAddressAndPort localEndpoint = InetAddressAndPort.getByName("127.0.0.1:7000");
         DatabaseDescriptor.setConfig(DatabaseDescriptor.loadConfig());
         return Stream.of(
                 forEachRepairType(true, AutoRepairService.instance::setEnabled, config::getEnabled),
@@ -74,8 +78,8 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
                 forEachRepairType(600, AutoRepairService.instance::setParallelRepairPercentage, config::getParallelRepairPercentage),
                 forEachRepairType(700, AutoRepairService.instance::setParallelRepairCount, config::getParallelRepairCount),
                 forEachRepairType(true, AutoRepairService.instance::setMaterializedViewRepairEnabled, config::getMaterializedViewRepairEnabled),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost().toString(false)), AutoRepairService.instance::setPriorityHosts, AutoRepairUtils::getPriorityHosts),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost().toString()), AutoRepairService.instance::setForceRepair, AutoRepairServiceSetterTest::isLocalHostForceRepair)
+                forEachRepairType(ImmutableSet.of(localEndpoint.toString(false).substring(1)), AutoRepairService.instance::setPriorityHosts, AutoRepairUtils::getPriorityHosts),
+                forEachRepairType(ImmutableSet.of(localEndpoint.toString(false).substring(1)), AutoRepairService.instance::setForceRepair, AutoRepairServiceSetterTest::isLocalHostForceRepair)
         ).flatMap(Function.identity()).collect(Collectors.toList());
     }
 
@@ -86,7 +90,7 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
                 SchemaConstants.DISTRIBUTED_KEYSPACE_NAME, SystemDistributedKeyspace.AUTO_REPAIR_HISTORY, hostId, type));
 
         if (!resultSet.isEmpty() && resultSet.one().getBoolean("force_repair")) {
-            return ImmutableSet.of(InetAddressAndPort.getLocalHost().toString(false));
+            return ImmutableSet.of(InetAddressAndPort.getLocalHost().toString(false).substring(1));
         }
         return ImmutableSet.of();
     }
@@ -94,7 +98,7 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
     private static <T> Stream<Object[]> forEachRepairType(T arg, BiConsumer<String, T> setter, Function<AutoRepairConfig.RepairType, T> getter) {
         Object[][] testCases = new Object[AutoRepairConfig.RepairType.values().length][4];
         for (AutoRepairConfig.RepairType repairType : AutoRepairConfig.RepairType.values()) {
-            testCases[repairType.ordinal()] = new Object[]{repairType.getConfigName(), arg, setter, getter};
+            testCases[repairType.ordinal()] = new Object[]{repairType, arg, setter, getter};
         }
 
         return Arrays.stream(testCases);
@@ -126,6 +130,6 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(false);
         DatabaseDescriptor.setCDCOnRepairEnabled(false);
         setter.accept(repairType.getConfigName(), arg);
-        assertEquals(arg, getter.apply(repairType.getConfigName()));
+        assertEquals(arg, getter.apply(repairType));
     }
 }

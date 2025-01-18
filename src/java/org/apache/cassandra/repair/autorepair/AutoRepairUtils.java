@@ -785,7 +785,7 @@ public class AutoRepairUtils
         Set<String> hosts = new HashSet<>();
         for (UUID hostId : getPriorityHostIds(repairType))
         {
-            hosts.add(ClusterMetadata.current().directory.addresses.get(NodeId.fromUUID(hostId)).broadcastAddress.toString(false));
+            hosts.add(ClusterMetadata.current().directory.addresses.get(NodeId.fromUUID(hostId)).broadcastAddress.toString(false).substring(1));
         }
         return hosts;
     }
