@@ -416,7 +416,7 @@ public class AutoRepairUtilsTest extends CQLTester
 
         assertNotNull(hosts);
         assertEquals(1, hosts.size());
-        assertTrue(hosts.contains(localEndpoint.toString(false)));
+        assertTrue(hosts.contains(localEndpoint.toString(false).substring(1)));
     }
 
     @Test
