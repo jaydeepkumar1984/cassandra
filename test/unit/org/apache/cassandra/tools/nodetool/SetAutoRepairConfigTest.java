@@ -41,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -56,7 +57,7 @@ public class SetAutoRepairConfigTest
     public static void before(NodeProbe probeMock, PrintStream outMock)
     {
         config = new AutoRepairConfig(true);
-        //when(probeMock.getAutoRepairConfig()).thenReturn(config);
+        when(probeMock.getEnabled()).thenReturn(true);
         cmd = new SetAutoRepairConfig();
         cmd.out = outMock;
     }
@@ -86,7 +87,7 @@ public class SetAutoRepairConfigTest
             verify(probe, times(1)).setHistoryClearDeleteHostsBufferInterval("1s");
 
             // test scenario when auto repair is disabled
-            //when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            when(probe.getEnabled()).thenReturn(false);
 
             cmd.execute(probe);
 
@@ -174,15 +175,15 @@ public class SetAutoRepairConfigTest
         @Test(expected = IllegalArgumentException.class)
         public void testNoArgs()
         {
-            cmd.repairType = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.execute(probe);
         }
 
         @Test
         public void testRepairSchedulingDisabled()
         {
-            //when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
-            cmd.repairType = repairType.name();
+            when(probe.getEnabled()).thenReturn(false);
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("threads", "1");
 
             cmd.execute(probe);
@@ -195,7 +196,7 @@ public class SetAutoRepairConfigTest
         public void testRepairTypeDisabled()
         {
             config.setEnabled(repairType, false);
-            cmd.repairType = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("number_of_repair_threads", "1");
 
             cmd.execute(probe);
@@ -207,7 +208,7 @@ public class SetAutoRepairConfigTest
         @Test
         public void testV2FlagMissing()
         {
-            cmd.repairType = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("threads", "1");
 
             try
@@ -227,7 +228,7 @@ public class SetAutoRepairConfigTest
         @Test(expected = IllegalArgumentException.class)
         public void testInvalidParamType()
         {
-            cmd.repairType = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of("unknown_type", "1");
 
             cmd.execute(probe);
@@ -236,23 +237,23 @@ public class SetAutoRepairConfigTest
         @Test
         public void testPriorityHosts()
         {
-            cmd.repairType = repairType.name();
-            cmd.args = ImmutableList.of("priority_hosts", String.join(",", localEndpoint.toString().substring(1), otherEndpoint.toString().substring(1)));
+            cmd.repairType = repairType.getConfigName();
+            cmd.args = ImmutableList.of("priority_hosts", String.join(",", localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setPriorityHosts(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false), otherEndpoint.toString(false)));
+            verify(probe, times(1)).setPriorityHosts(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
         }
 
         @Test
         public void testForceRepairHosts()
         {
-            cmd.repairType = repairType.name();
-            cmd.args = ImmutableList.of("forcerepair_hosts", String.join(",", localEndpoint.toString().substring(1), otherEndpoint.toString().substring(1)));
+            cmd.repairType = repairType.getConfigName();
+            cmd.args = ImmutableList.of("forcerepair_hosts", String.join(",", localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
 
             cmd.execute(probe);
 
-            verify(probe, times(1)).setForceRepair(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false), otherEndpoint.toString(false)));
+            verify(probe, times(1)).setForceRepair(repairType.getConfigName(), ImmutableSet.of(localEndpoint.toString(false).substring(1), otherEndpoint.toString(false).substring(1)));
         }
     }
 
@@ -316,7 +317,7 @@ public class SetAutoRepairConfigTest
         @Test
         public void test()
         {
-            cmd.repairType = repairType.name();
+            cmd.repairType = repairType.getConfigName();
             cmd.args = ImmutableList.of(paramType, paramVal);
 
             cmd.execute(probe);
@@ -324,7 +325,7 @@ public class SetAutoRepairConfigTest
             verifyFunc.accept(repairType);
 
             // test scenario when auto repair is disabled
-            //when(probe.getAutoRepairConfig()).thenReturn(new AutoRepairConfig(false));
+            when(probe.getEnabled()).thenReturn(false);
 
             cmd.execute(probe);
 

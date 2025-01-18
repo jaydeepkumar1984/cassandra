@@ -72,7 +72,7 @@ public class AutoRepairStatusTest
         setAutoRepairEnabled(true);
         DatabaseDescriptor.getAutoRepairConfig().setEnabled(AutoRepairConfig.RepairType.FULL, true);
         DatabaseDescriptor.getAutoRepairConfig().setEnabled(AutoRepairConfig.RepairType.INCREMENTAL, true);
-        //when(probe.getAutoRepairConfig()).thenReturn(DatabaseDescriptor.getAutoRepairConfig());
+        when(probe.getEnabled()).thenReturn(true);
     }
 
     @Test(expected = IllegalArgumentException.class)
