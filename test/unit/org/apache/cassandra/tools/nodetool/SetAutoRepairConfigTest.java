@@ -286,7 +286,7 @@ public class SetAutoRepairConfigTest
             forEachRepairType("parallel_repair_percentage", "7", (type) -> verify(probe, times(1)).setParallelRepairPercentage(type.getConfigName(), 7)),
             forEachRepairType("materialized_view_repair_enabled", "true", (type) -> verify(probe, times(1)).setMaterializedViewRepairEnabled(type.getConfigName(), true)),
             forEachRepairType("ignore_dcs", "dc1,dc2", (type) -> verify(probe, times(1)).setIgnoreDCs(type.getConfigName(), ImmutableSet.of("dc1", "dc2"))),
-            forEachRepairType("token_range_splitter.max_bytes_per_schedule", "500GiB", (type) -> verify(probe, times(1)).setAutoRepairTokenRangeSplitterParameter(type.getConfigName(), "max_bytes_per_schedule", "500GiB"))
+            forEachRepairType("token_range_splitter.max_bytes_per_schedule", "500GiB", (type) -> verify(probe, times(1)).setTokenRangeSplitterInstance(type.getConfigName(), "max_bytes_per_schedule", "500GiB"))
             ).flatMap(Function.identity()).collect(Collectors.toList());
         }
 

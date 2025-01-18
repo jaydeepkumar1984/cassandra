@@ -105,7 +105,7 @@ public class SetAutoRepairConfig extends NodeToolCmd
         if(paramType.startsWith(TOKEN_RANGE_SPLITTER_PROPERTY_PREFIX))
         {
             final String key = paramType.replace(TOKEN_RANGE_SPLITTER_PROPERTY_PREFIX, "");
-            probe.setAutoRepairTokenRangeSplitterParameter(repairType, key, paramVal);
+            probe.setTokenRangeSplitterInstance(repairType, key, paramVal);
             return;
         }
 

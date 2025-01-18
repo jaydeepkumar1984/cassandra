@@ -2414,125 +2414,6 @@ public class NodeProbe implements AutoCloseable
         ssProxy.abortBootstrap(nodeId, endpoint);
     }
 
-    public Map<String, String> getTokenRangeSplitterInstance(String repairType)
-    {
-        return autoRepairProxy.getTokenRangeSplitterInstance(repairType);
-    }
-
-    public void setAutoRepairTokenRangeSplitterParameter(String repairType, String key, String value)
-    {
-        autoRepairProxy.setTokenRangeSplitterInstance(repairType, key, value);
-    }
-
-    public void setEnabled(String repairType, boolean enabled)
-    {
-        autoRepairProxy.setEnabled(repairType, enabled);
-    }
-
-    public void setNumberOfRepairThreads(String repairType, int repairThreads)
-    {
-        autoRepairProxy.setNumberOfRepairThreads(repairType, repairThreads);
-    }
-
-    public void setPriorityHosts(String repairType, Set<String> hosts)
-    {
-        autoRepairProxy.setPriorityHosts(repairType, hosts);
-    }
-
-    public Set<String> getPriorityHosts(String repairType)
-    {
-        return autoRepairProxy.getPriorityHosts(repairType);
-    }
-
-    public void setForceRepair(String repairType, Set<String> hosts){
-        autoRepairProxy.setForceRepair(repairType, hosts);
-    }
-
-    public void setMinRepairInterval(String repairType, String minRepairInterval)
-    {
-        autoRepairProxy.setMinRepairInterval(repairType, minRepairInterval);
-    }
-
-    public void setHistoryClearDeleteHostsBufferInterval(String duration)
-    {
-        autoRepairProxy.setHistoryClearDeleteHostsBufferInterval(duration);
-    }
-
-    public void startScheduler()
-    {
-        autoRepairProxy.startScheduler();
-    }
-
-    public void setRepairMaxRetries(int retries)
-    {
-        autoRepairProxy.setRepairMaxRetries(retries);
-    }
-
-    public void setRepairRetryBackoff(String interval)
-    {
-        autoRepairProxy.setRepairRetryBackoff(interval);
-    }
-
-    public void setRepairTaskMinDuration(String duration)
-    {
-        autoRepairProxy.setRepairTaskMinDuration(duration);
-    }
-
-    public void setSSTableUpperThreshold(String repairType, int ssTableHigherThreshold)
-    {
-        autoRepairProxy.setSSTableUpperThreshold(repairType, ssTableHigherThreshold);
-    }
-
-    public void setTableMaxRepairTime(String repairType, String autoRepairTableMaxRepairTime)
-    {
-        autoRepairProxy.setTableMaxRepairTime(repairType, autoRepairTableMaxRepairTime);
-    }
-
-    public void setIgnoreDCs(String repairType, Set<String> ignoreDCs)
-    {
-        autoRepairProxy.setIgnoreDCs(repairType, ignoreDCs);
-    }
-
-    public void setParallelRepairPercentage(String repairType, int percentage)
-    {
-        autoRepairProxy.setParallelRepairPercentage(repairType, percentage);
-    }
-
-    public void setParallelRepairCount(String repairType, int count)
-    {
-        autoRepairProxy.setParallelRepairCount(repairType, count);
-    }
-
-    public void setRepairPrimaryTokenRangeOnly(String repairType, boolean primaryTokenRangeOnly)
-    {
-        autoRepairProxy.setRepairPrimaryTokenRangeOnly(repairType, primaryTokenRangeOnly);
-    }
-
-    public void setMaterializedViewRepairEnabled(String repairType, boolean enabled)
-    {
-        autoRepairProxy.setMaterializedViewRepairEnabled(repairType, enabled);
-    }
-
-    public List<String> mutateSSTableRepairedState(boolean repair, boolean preview, String keyspace, List<String> tables) throws InvalidRequestException
-    {
-        return ssProxy.mutateSSTableRepairedState(repair, preview, keyspace, tables);
-    }
-
-    public List<String> getTablesForKeyspace(String keyspace)
-    {
-        return ssProxy.getTablesForKeyspace(keyspace);
-    }
-
-    public void setRepairSessionTimeout(String repairType, String timeout)
-    {
-        autoRepairProxy.setRepairSessionTimeout(repairType, timeout);
-    }
-
-    public Set<String> getOnGoingRepairHostIds(String repairType)
-    {
-        return autoRepairProxy.getOnGoingRepairHostIds(repairType);
-    }
-
     public boolean getEnabled()
     {
         return autoRepairProxy.getEnabled();
@@ -2543,9 +2424,24 @@ public class NodeProbe implements AutoCloseable
         return autoRepairProxy.getRepairCheckInterval();
     }
 
+    public String getHistoryClearDeleteHostsBufferInterval()
+    {
+        return autoRepairProxy.getHistoryClearDeleteHostsBufferInterval();
+    }
+
+    public void setHistoryClearDeleteHostsBufferInterval(String duration)
+    {
+        autoRepairProxy.setHistoryClearDeleteHostsBufferInterval(duration);
+    }
+
     public int getRepairMaxRetries()
     {
         return autoRepairProxy.getRepairMaxRetries();
+    }
+
+    public void setRepairMaxRetries(int retries)
+    {
+        autoRepairProxy.setRepairMaxRetries(retries);
     }
 
     public String getRepairRetryBackoff()
@@ -2553,14 +2449,19 @@ public class NodeProbe implements AutoCloseable
         return autoRepairProxy.getRepairRetryBackoff();
     }
 
+    public void setRepairRetryBackoff(String interval)
+    {
+        autoRepairProxy.setRepairRetryBackoff(interval);
+    }
+
     public String getRepairTaskMinDuration()
     {
         return autoRepairProxy.getRepairTaskMinDuration();
     }
 
-    public String getHistoryClearDeleteHostsBufferInterval()
+    public void setRepairTaskMinDuration(String duration)
     {
-        return autoRepairProxy.getHistoryClearDeleteHostsBufferInterval();
+        autoRepairProxy.setRepairTaskMinDuration(duration);
     }
 
     public boolean getEnabled(String repairType)
@@ -2568,9 +2469,39 @@ public class NodeProbe implements AutoCloseable
         return autoRepairProxy.getEnabled(repairType);
     }
 
+    public void setEnabled(String repairType, boolean enabled)
+    {
+        autoRepairProxy.setEnabled(repairType, enabled);
+    }
+
+    public int getNumberOfRepairThreads(String repairType)
+    {
+        return autoRepairProxy.getNumberOfRepairThreads(repairType);
+    }
+
+    public void setNumberOfRepairThreads(String repairType, int repairThreads)
+    {
+        autoRepairProxy.setNumberOfRepairThreads(repairType, repairThreads);
+    }
+
+    public Set<String> getPriorityHosts(String repairType)
+    {
+        return autoRepairProxy.getPriorityHosts(repairType);
+    }
+
+    public void setPriorityHosts(String repairType, Set<String> hosts)
+    {
+        autoRepairProxy.setPriorityHosts(repairType, hosts);
+    }
+
     public String getMinRepairInterval(String repairType)
     {
         return autoRepairProxy.getMinRepairInterval(repairType);
+    }
+
+    public void setMinRepairInterval(String repairType, String minRepairInterval)
+    {
+        autoRepairProxy.setMinRepairInterval(repairType, minRepairInterval);
     }
 
     public boolean getRepairByKeyspace(String repairType)
@@ -2583,14 +2514,14 @@ public class NodeProbe implements AutoCloseable
         autoRepairProxy.setRepairByKeyspace(repairType, repairByKeyspace);
     }
 
-    public int getNumberOfRepairThreads(String repairType)
-    {
-        return autoRepairProxy.getNumberOfRepairThreads(repairType);
-    }
-
     public int getSSTableUpperThreshold(String repairType)
     {
         return autoRepairProxy.getSSTableUpperThreshold(repairType);
+    }
+
+    public void setSSTableUpperThreshold(String repairType, int ssTableHigherThreshold)
+    {
+        autoRepairProxy.setSSTableUpperThreshold(repairType, ssTableHigherThreshold);
     }
 
     public String getTableMaxRepairTime(String repairType)
@@ -2598,39 +2529,9 @@ public class NodeProbe implements AutoCloseable
         return autoRepairProxy.getTableMaxRepairTime(repairType);
     }
 
-    public int getParallelRepairPercentage(String repairType)
+    public void setTableMaxRepairTime(String repairType, String autoRepairTableMaxRepairTime)
     {
-        return autoRepairProxy.getParallelRepairPercentage(repairType);
-    }
-
-    public int getParallelRepairCount(String repairType)
-    {
-        return autoRepairProxy.getParallelRepairCount(repairType);
-    }
-
-    public String getRepairSessionTimeout(String repairType)
-    {
-        return autoRepairProxy.getRepairSessionTimeout(repairType);
-    }
-
-    public boolean getForceRepairNewNode(String repairType)
-    {
-        return autoRepairProxy.getForceRepairNewNode(repairType);
-    }
-
-    public boolean getRepairPrimaryTokenRangeOnly(String repairType)
-    {
-        return autoRepairProxy.getRepairPrimaryTokenRangeOnly(repairType);
-    }
-
-    public boolean getMaterializedViewRepairEnabled(String repairType)
-    {
-        return autoRepairProxy.getMaterializedViewRepairEnabled(repairType);
-    }
-
-    public String getInitialSchedulerDelay(String repairType)
-    {
-        return autoRepairProxy.getInitialSchedulerDelay(repairType);
+        autoRepairProxy.setTableMaxRepairTime(repairType, autoRepairTableMaxRepairTime);
     }
 
     public Set<String> getIgnoreDCs(String repairType)
@@ -2638,9 +2539,108 @@ public class NodeProbe implements AutoCloseable
         return autoRepairProxy.getIgnoreDCs(repairType);
     }
 
+    public void setIgnoreDCs(String repairType, Set<String> ignoreDCs)
+    {
+        autoRepairProxy.setIgnoreDCs(repairType, ignoreDCs);
+    }
+
+    public boolean getRepairPrimaryTokenRangeOnly(String repairType)
+    {
+        return autoRepairProxy.getRepairPrimaryTokenRangeOnly(repairType);
+    }
+
+    public void setRepairPrimaryTokenRangeOnly(String repairType, boolean primaryTokenRangeOnly)
+    {
+        autoRepairProxy.setRepairPrimaryTokenRangeOnly(repairType, primaryTokenRangeOnly);
+    }
+
+    public int getParallelRepairPercentage(String repairType)
+    {
+        return autoRepairProxy.getParallelRepairPercentage(repairType);
+    }
+
+    public void setParallelRepairPercentage(String repairType, int percentage)
+    {
+        autoRepairProxy.setParallelRepairPercentage(repairType, percentage);
+    }
+
+    public int getParallelRepairCount(String repairType)
+    {
+        return autoRepairProxy.getParallelRepairCount(repairType);
+    }
+
+    public void setParallelRepairCount(String repairType, int count)
+    {
+        autoRepairProxy.setParallelRepairCount(repairType, count);
+    }
+
+    public boolean getMaterializedViewRepairEnabled(String repairType)
+    {
+        return autoRepairProxy.getMaterializedViewRepairEnabled(repairType);
+    }
+
+    public void setMaterializedViewRepairEnabled(String repairType, boolean enabled)
+    {
+        autoRepairProxy.setMaterializedViewRepairEnabled(repairType, enabled);
+    }
+
+    public String getRepairSessionTimeout(String repairType)
+    {
+        return autoRepairProxy.getRepairSessionTimeout(repairType);
+    }
+
+    public void setRepairSessionTimeout(String repairType, String timeout)
+    {
+        autoRepairProxy.setRepairSessionTimeout(repairType, timeout);
+    }
+
+    public Map<String, String> getTokenRangeSplitterInstance(String repairType)
+    {
+        return autoRepairProxy.getTokenRangeSplitterInstance(repairType);
+    }
+
+    public void setTokenRangeSplitterInstance(String repairType, String key, String value)
+    {
+        autoRepairProxy.setTokenRangeSplitterInstance(repairType, key, value);
+    }
+
+    public Set<String> getOnGoingRepairHostIds(String repairType)
+    {
+        return autoRepairProxy.getOnGoingRepairHostIds(repairType);
+    }
+
+    public boolean getForceRepairNewNode(String repairType)
+    {
+        return autoRepairProxy.getForceRepairNewNode(repairType);
+    }
+
+    public String getInitialSchedulerDelay(String repairType)
+    {
+        return autoRepairProxy.getInitialSchedulerDelay(repairType);
+    }   
+
     public String getTokenRangeSplitter(String repairType)
     {
         return autoRepairProxy.getTokenRangeSplitter(repairType);
+    }
+
+    public void setForceRepair(String repairType, Set<String> hosts){
+        autoRepairProxy.setForceRepair(repairType, hosts);
+    }
+
+    public void startScheduler()
+    {
+        autoRepairProxy.startScheduler();
+    }
+
+    public List<String> mutateSSTableRepairedState(boolean repair, boolean preview, String keyspace, List<String> tables) throws InvalidRequestException
+    {
+        return ssProxy.mutateSSTableRepairedState(repair, preview, keyspace, tables);
+    }
+
+    public List<String> getTablesForKeyspace(String keyspace)
+    {
+        return ssProxy.getTablesForKeyspace(keyspace);
     }
 }
 
