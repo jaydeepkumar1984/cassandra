@@ -75,7 +75,6 @@ public class AutoRepairService implements AutoRepairServiceMBean
             throw new ConfigurationException("Cannot run incremental repair while CDC replay is enabled. Set cdc_on_repair_enabled to false.");
     }
 
-    //@Override
     public AutoRepairConfig getAutoRepairConfig()
     {
         return config;
@@ -144,12 +143,6 @@ public class AutoRepairService implements AutoRepairServiceMBean
     public void setPriorityHosts(String repairType, Set<String> hostsStr)
     {
         AutoRepairUtils.addPriorityHosts(RepairType.fromString(repairType), convertToHosts(hostsStr));
-    }
-
-    @Override
-    public Set<String> getForceRepairForHosts(String repairType)
-    {
-        return null;
     }
 
     @Override
@@ -362,7 +355,7 @@ public class AutoRepairService implements AutoRepairServiceMBean
     }
 
     @Override
-    public void getTokenRangeSplitterInstance(String repairType, String key, String value)
+    public void setTokenRangeSplitterInstance(String repairType, String key, String value)
     {
         config.getTokenRangeSplitterInstance(RepairType.fromString(repairType)).setParameter(key, value);
     }

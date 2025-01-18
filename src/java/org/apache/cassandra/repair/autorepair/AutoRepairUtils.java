@@ -853,9 +853,9 @@ public class AutoRepairUtils
         AutoRepairConfig repairConfig = DatabaseDescriptor.getAutoRepairConfig();
         if (repairConfig.getEnabled())
         {
-            for (AutoRepairConfig.RepairType rType : AutoRepairConfig.RepairType.values())
-                if (repairConfig.getEnabled(rType) && repairConfig.getForceRepairNewNode(rType))
-                    AutoRepairUtils.setForceRepairNewNode(rType);
+            for (AutoRepairConfig.RepairType repairType : AutoRepairConfig.RepairType.values())
+                if (repairConfig.getEnabled(repairType) && repairConfig.getForceRepairNewNode(repairType))
+                    AutoRepairUtils.setForceRepairNewNode(repairType);
         }
     }
 

@@ -2414,11 +2414,6 @@ public class NodeProbe implements AutoCloseable
         ssProxy.abortBootstrap(nodeId, endpoint);
     }
 
-//    public AutoRepairConfig getAutoRepairConfig()
-//    {
-//        return null;//autoRepairProxy.getAutoRepairConfig();
-//    }
-
     public Map<String, String> getTokenRangeSplitterInstance(String repairType)
     {
         return autoRepairProxy.getTokenRangeSplitterInstance(repairType);
@@ -2426,7 +2421,7 @@ public class NodeProbe implements AutoCloseable
 
     public void setAutoRepairTokenRangeSplitterParameter(String repairType, String key, String value)
     {
-        autoRepairProxy.getTokenRangeSplitterInstance(repairType, key, value);
+        autoRepairProxy.setTokenRangeSplitterInstance(repairType, key, value);
     }
 
     public void setEnabled(String repairType, boolean enabled)

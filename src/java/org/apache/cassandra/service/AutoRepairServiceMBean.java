@@ -52,8 +52,6 @@ public interface AutoRepairServiceMBean
 
     void setPriorityHosts(String repairType, Set<String> host);
 
-    public Set<String> getForceRepairForHosts(String repairType);
-
     public void setForceRepair(String repairType, Set<String> host);
 
     public String getMinRepairInterval(String repairType);
@@ -90,11 +88,6 @@ public interface AutoRepairServiceMBean
     public boolean getMaterializedViewRepairEnabled(String repairType);
     public void setMaterializedViewRepairEnabled(String repairType, boolean enabled);
 
-    //public AutoRepairConfig getAutoRepairConfig();
-//    public Map<String, String> getTopLevelSettings();
-//
-//    public Map<String, Map<String, String>> getRepairSpecificSettings();
-
     public String getRepairSessionTimeout(String repairType);
     public void setRepairSessionTimeout(String repairType, String timeout);
 
@@ -102,7 +95,7 @@ public interface AutoRepairServiceMBean
 
     public Map<String, String> getTokenRangeSplitterInstance(String repairType);
 
-    public void getTokenRangeSplitterInstance(String repairType, String key, String value);
+    public void setTokenRangeSplitterInstance(String repairType, String key, String value);
 
     boolean getForceRepairNewNode(String repairType);
 

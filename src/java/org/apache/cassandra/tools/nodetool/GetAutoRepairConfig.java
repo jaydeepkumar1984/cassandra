@@ -37,7 +37,6 @@ public class GetAutoRepairConfig extends NodeToolCmd
     @Override
     public void execute(NodeProbe probe)
     {
-//        AutoRepairConfig config = probe.getAutoRepairConfig();
         if (!probe.getEnabled())
         {
             out.println("Auto-repair is not enabled");
@@ -88,7 +87,6 @@ public class GetAutoRepairConfig extends NodeToolCmd
             appendConfig(sb , "force_repair_new_node", probe.getForceRepairNewNode(repairType));
 
             final String splitterClassName = probe.getTokenRangeSplitter(repairType);
-            //final String splitterClassName =  splitterClass.class_name != null ? splitterClass.class_name : AutoRepairConfig.DEFAULT_SPLITTER.getName();
             appendConfig(sb, "token_range_splitter", splitterClassName);
             Map<String, String> tokenRangeSplitterParameters = probe.getTokenRangeSplitterInstance(repairType);
             if (!tokenRangeSplitterParameters.isEmpty())
