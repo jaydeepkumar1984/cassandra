@@ -23,8 +23,10 @@ import com.google.common.base.Splitter;
 import io.airlift.airline.Arguments;
 import io.airlift.airline.Command;
 import io.airlift.airline.Option;
+import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeTool.NodeToolCmd;
+import org.apache.cassandra.utils.LocalizeString;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -101,6 +103,8 @@ public class SetAutoRepairConfig extends NodeToolCmd
 
         // options below require --repair-type option
         checkArgument(repairType != null, "--repair-type is required for this parameter.");
+        // ensure that the correct repair type has been given
+        AutoRepairConfig.RepairType.fromString(LocalizeString.toUpperCaseLocalized(repairType));
 
         if(paramType.startsWith(TOKEN_RANGE_SPLITTER_PROPERTY_PREFIX))
         {

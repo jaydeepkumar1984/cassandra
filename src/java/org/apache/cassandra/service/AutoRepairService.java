@@ -347,8 +347,7 @@ public class AutoRepairService implements AutoRepairServiceMBean
     public String getTokenRangeSplitter(String repairType)
     {
         final ParameterizedClass splitterClass = config.getTokenRangeSplitter(RepairType.fromString(repairType));
-        final String splitterClassName = splitterClass.class_name != null ? splitterClass.class_name : AutoRepairConfig.DEFAULT_SPLITTER.getName();
-        return splitterClassName;
+        return splitterClass.class_name != null ? splitterClass.class_name : AutoRepairConfig.DEFAULT_SPLITTER.getName();
     }
 
     @Override

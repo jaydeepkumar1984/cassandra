@@ -2617,7 +2617,7 @@ public class NodeProbe implements AutoCloseable
     public String getInitialSchedulerDelay(String repairType)
     {
         return autoRepairProxy.getInitialSchedulerDelay(repairType);
-    }   
+    }
 
     public String getTokenRangeSplitter(String repairType)
     {

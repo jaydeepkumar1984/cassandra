@@ -35,11 +35,11 @@ public interface AutoRepairServiceMBean
     void setRepairMaxRetries(int retries);
 
     String getRepairRetryBackoff();
-    
+
     void setRepairRetryBackoff(String interval);
 
     String getRepairTaskMinDuration();
-    
+
     void setRepairTaskMinDuration(String duration);
 
     boolean getEnabled(String repairType);
