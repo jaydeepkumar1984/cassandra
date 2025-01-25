@@ -3298,7 +3298,10 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
             datacenters.removeAll(existingDatacenters);
             throw new IllegalArgumentException("data center(s) " + datacenters.toString() + " not found");
         }
-
+        if (!Guardrails.mixedRepairsEnabled.isEnabled(null))
+        {
+            throw new IllegalStateException("Repairs while in mixed mode is disabled.");
+        }
         RepairCoordinator task = new RepairCoordinator(this, cmd, options, keyspace);
         task.addProgressListener(progressSupport);
         for (ProgressListener listener : listeners)

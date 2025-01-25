@@ -55,6 +55,16 @@ public interface GuardrailsMBean
     void setKeyspacesThreshold(int warn, int fail);
 
     /**
+     * @return If mixed cassandra version repairs are enabled.
+     */
+    boolean getMixedVersionRepairsEnabled();
+
+    /**
+     * @param enabled If mixed cassandra version repairs are enabled.
+     */
+    void setMixedVersionRepairsEnabled(boolean enabled);
+
+    /**
      * @return The threshold to warn when creating more tables than threshold.
      * -1 means disabled.
      */

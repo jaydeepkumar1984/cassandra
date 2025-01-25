@@ -107,6 +107,12 @@ public interface GuardrailsConfig
     int getPartitionKeysInSelectFailThreshold();
 
     /**
+     * @return if repairs during mixed versions are allowed
+     */
+    boolean getMixedVersionRepairsEnabled();
+    boolean setMixedVersionRepairsEnabled(boolean enabled);
+
+    /**
      * @return The threshold to fail when creating more materialized views per table than threshold.
      */
     int getMaterializedViewsPerTableFailThreshold();

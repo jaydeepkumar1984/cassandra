@@ -423,6 +423,7 @@ public class Config
     // When false, it behaves the same as normal streaming.
     public volatile boolean cdc_on_repair_enabled = true;
     public String cdc_raw_directory;
+    public boolean mixed_version_repairs_enabled = true;
     @Replaces(oldName = "cdc_total_space_in_mb", converter = Converters.MEBIBYTES_DATA_STORAGE_INT, deprecated = true)
     public DataStorageSpec.IntMebibytesBound cdc_total_space = new DataStorageSpec.IntMebibytesBound("0MiB");
     @Replaces(oldName = "cdc_free_space_check_interval_ms", converter = Converters.MILLIS_DURATION_INT, deprecated = true)
