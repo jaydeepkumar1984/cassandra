@@ -44,20 +44,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.cassandra.Util.setAutoRepairEnabled;
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class AutoRepairServiceSetterTest<T> extends CQLTester {
     private static final AutoRepairConfig config = new AutoRepairConfig(true);
 
     @Parameterized.Parameter
-    public AutoRepairConfig.RepairType repairType;
+    public AutoRepairConfig.RepairType repairTypeStr;
 
     @Parameterized.Parameter(1)
     public T arg;
 
     @Parameterized.Parameter(2)
-    public BiConsumer<AutoRepairConfig.RepairType, T> setter;
+    public BiConsumer<String, T> setter;
 
     @Parameterized.Parameter(3)
     public Function<AutoRepairConfig.RepairType, T> getter;
@@ -74,8 +74,8 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
                 forEachRepairType(600, AutoRepairService.instance::setParallelRepairPercentage, config::getParallelRepairPercentage),
                 forEachRepairType(700, AutoRepairService.instance::setParallelRepairCount, config::getParallelRepairCount),
                 forEachRepairType(true, AutoRepairService.instance::setMVRepairEnabled, config::getMaterializedViewRepairEnabled),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setRepairPriorityForHosts, AutoRepairUtils::getPriorityHosts),
-                forEachRepairType(ImmutableSet.of(InetAddressAndPort.getLocalHost()), AutoRepairService.instance::setForceRepairForHosts, AutoRepairServiceSetterTest::isLocalHostForceRepair)
+                forEachRepairType(InetAddressAndPort.getLocalHost().getHostAddressAndPort(), (repairType, commaSeparatedHostSet) -> AutoRepairService.instance.setRepairPriorityForHosts(repairType, (String) commaSeparatedHostSet), AutoRepairUtils::getPriorityHosts),
+                forEachRepairType(InetAddressAndPort.getLocalHost().getHostAddressAndPort(), (repairType, commaSeparatedHostSet) -> AutoRepairService.instance.setForceRepairForHosts(repairType, (String) commaSeparatedHostSet), AutoRepairServiceSetterTest::isLocalHostForceRepair)
         ).flatMap(Function.identity()).collect(Collectors.toList());
     }
 
@@ -91,7 +91,7 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
         return ImmutableSet.of();
     }
 
-    private static <T> Stream<Object[]> forEachRepairType(T arg, BiConsumer<AutoRepairConfig.RepairType, T> setter, Function<AutoRepairConfig.RepairType, T> getter) {
+    private static <T> Stream<Object[]> forEachRepairType(T arg, BiConsumer<String, T> setter, Function<AutoRepairConfig.RepairType, T> getter) {
         Object[][] testCases = new Object[AutoRepairConfig.RepairType.values().length][4];
         for (AutoRepairConfig.RepairType repairType : AutoRepairConfig.RepairType.values()) {
             testCases[repairType.ordinal()] = new Object[]{repairType, arg, setter, getter};
@@ -122,10 +122,19 @@ public class AutoRepairServiceSetterTest<T> extends CQLTester {
     }
 
     @Test
-    public void testSettersTest() {
+    public void testSettersTest()
+    {
         DatabaseDescriptor.setMaterializedViewsOnRepairEnabled(false);
         DatabaseDescriptor.setCDCOnRepairEnabled(false);
-        setter.accept(repairType, arg);
-        assertEquals(arg, getter.apply(repairType));
+        setter.accept(repairTypeStr.name(), arg);
+        T actualConfig = getter.apply(repairTypeStr);
+        if (actualConfig instanceof Set)
+            // When performing a setRepairPriorityForHosts or setForceRepairForHosts, a comma-separated list of
+            // ip addresses is provided as input. The configuration is expected to return a Set of Strings that
+            // represent the configured IP addresses. This especial handling allows verification of this special
+            // case where one of the entries in the Set must match the configured input.
+            assertThat(actualConfig).satisfiesAnyOf(entry -> assertThat(entry.toString()).contains(arg.toString()));
+        else
+            assertThat(actualConfig).isEqualTo(arg);
     }
 }
