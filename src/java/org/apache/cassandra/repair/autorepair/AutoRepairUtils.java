@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -78,6 +79,7 @@ import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
 import org.apache.cassandra.utils.NoSpamLogger;
+import org.apache.cassandra.utils.Pair;
 
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN;
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_DUE_TO_PRIORITY;
@@ -97,6 +99,7 @@ public class AutoRepairUtils
     static final String COL_REPAIR_START_TS = "repair_start_ts";
     static final String COL_REPAIR_FINISH_TS = "repair_finish_ts";
     static final String COL_REPAIR_PRIORITY = "repair_priority";
+    static final String COL_REPAIR_PROXY = "repair_proxy";
     static final String COL_DELETE_HOSTS = "delete_hosts";  // this set stores the host ids which think the row should be deleted
     static final String COL_REPAIR_TURN = "repair_turn";  // this record the last repair turn. Normal turn or turn due to priority
     static final String COL_DELETE_HOSTS_UPDATE_TIME = "delete_hosts_update_time"; // the time when delete hosts are upated
@@ -114,6 +117,9 @@ public class AutoRepairUtils
     final static String ADD_PRIORITY_HOST = String.format(
     "UPDATE %s.%s SET %s = %s + ?  WHERE %s = ?", SchemaConstants.DISTRIBUTED_KEYSPACE_NAME,
     SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY, COL_REPAIR_PRIORITY, COL_REPAIR_PRIORITY, COL_REPAIR_TYPE);
+    final static String ADD_PROXY_HOST = String.format(
+    "UPDATE %s.%s SET %s[?] = ?  WHERE %s = ?", SchemaConstants.DISTRIBUTED_KEYSPACE_NAME,
+    SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY, COL_REPAIR_PROXY, COL_REPAIR_TYPE);
 
     final static String INSERT_NEW_REPAIR_HISTORY = String.format(
     "INSERT INTO %s.%s (%s, %s, %s, %s, %s, %s) values (?, ? ,?, ?, {}, ?) IF NOT EXISTS",
@@ -167,6 +173,7 @@ public class AutoRepairUtils
     static ModificationStatement addHostIDToDeleteHostsStatement;
     static ModificationStatement clearDeleteHostsStatement;
     static ModificationStatement setForceRepairStatement;
+    static ModificationStatement addProxyRepairHost;
     static ConsistencyLevel internalQueryCL;
 
     public enum RepairTurn
@@ -174,7 +181,8 @@ public class AutoRepairUtils
         MY_TURN,
         NOT_MY_TURN,
         MY_TURN_DUE_TO_PRIORITY,
-        MY_TURN_FORCE_REPAIR
+        MY_TURN_FORCE_REPAIR,
+        MY_TURN_REPAIR_PROXY
     }
 
     public static void setup()
@@ -205,6 +213,8 @@ public class AutoRepairUtils
                                                                                                             .forInternalCalls());
         delStatementRepairHistory = (ModificationStatement) QueryProcessor.getStatement(DEL_AUTO_REPAIR_HISTORY, ClientState
                                                                                                                  .forInternalCalls());
+        addProxyRepairHost = (ModificationStatement) QueryProcessor.getStatement(ADD_PROXY_HOST, ClientState
+                                                                                                 .forInternalCalls());
         Keyspace autoRepairKS = Schema.instance.getKeyspaceInstance(SchemaConstants.DISTRIBUTED_KEYSPACE_NAME);
         internalQueryCL = autoRepairKS.getReplicationStrategy().getClass() == NetworkTopologyStrategy.class ?
                           ConsistencyLevel.LOCAL_QUORUM : ConsistencyLevel.ONE;
@@ -264,9 +274,10 @@ public class AutoRepairUtils
         public Set<UUID> hostIdsWithOnGoingRepair;  // hosts that is running repair
         public Set<UUID> hostIdsWithOnGoingForceRepair; // hosts that is running repair because of force repair
         Set<UUID> priority;
+        Map<UUID, UUID> proxyHostsToTokenRange;
         List<AutoRepairHistory> historiesWithoutOnGoingRepair;  // hosts that is NOT running repair
 
-        public CurrentRepairStatus(List<AutoRepairHistory> repairHistories, Set<UUID> priority)
+        public CurrentRepairStatus(List<AutoRepairHistory> repairHistories, Set<UUID> priority, Map<UUID, UUID> proxyHostsToTokenRange)
         {
             hostIdsWithOnGoingRepair = new HashSet<>();
             hostIdsWithOnGoingForceRepair = new HashSet<>();
@@ -291,6 +302,7 @@ public class AutoRepairUtils
                 }
             }
             this.priority = priority;
+            this.proxyHostsToTokenRange = proxyHostsToTokenRange;
         }
 
         public String toString()
@@ -300,6 +312,7 @@ public class AutoRepairUtils
                               add("hostIdsWithOnGoingForceRepair", hostIdsWithOnGoingForceRepair).
                               add("historiesWithoutOnGoingRepair", historiesWithoutOnGoingRepair).
                               add("priority", priority).
+                              add("proxyHostsToTokenRange", proxyHostsToTokenRange).
                               toString();
         }
     }
@@ -405,7 +418,7 @@ public class AutoRepairUtils
     {
         if (autoRepairHistories != null)
         {
-            CurrentRepairStatus status = new CurrentRepairStatus(autoRepairHistories, getPriorityHostIds(repairType));
+            CurrentRepairStatus status = new CurrentRepairStatus(autoRepairHistories, getPriorityHostIds(repairType), getRepairProxy(repairType));
 
             return status;
         }
@@ -450,23 +463,36 @@ public class AutoRepairUtils
     public static AutoRepairHistory getHostWithLongestUnrepairTime(RepairType repairType)
     {
         List<AutoRepairHistory> autoRepairHistories = getAutoRepairHistory(repairType);
-        return getHostWithLongestUnrepairTime(autoRepairHistories);
+        return getHostWithUnrepairTime(autoRepairHistories, true);
     }
 
-    private static AutoRepairHistory getHostWithLongestUnrepairTime(List<AutoRepairHistory> autoRepairHistories)
+    private static AutoRepairHistory getHostWithUnrepairTime(List<AutoRepairHistory> autoRepairHistories,
+                                                             boolean findLongestUnrepairTime)
     {
         if (autoRepairHistories == null)
         {
             return null;
         }
         AutoRepairHistory rst = null;
-        long oldestTimestamp = Long.MAX_VALUE;
+        long referenceTimestamp = findLongestUnrepairTime ? Long.MAX_VALUE : Long.MIN_VALUE;
+
         for (AutoRepairHistory autoRepairHistory : autoRepairHistories)
         {
-            if (autoRepairHistory.lastRepairFinishTime < oldestTimestamp)
+            if (findLongestUnrepairTime)
             {
-                rst = autoRepairHistory;
-                oldestTimestamp = autoRepairHistory.lastRepairFinishTime;
+                if (autoRepairHistory.lastRepairFinishTime < referenceTimestamp)
+                {
+                    rst = autoRepairHistory;
+                    referenceTimestamp = autoRepairHistory.lastRepairFinishTime;
+                }
+            }
+            else
+            {
+                if (autoRepairHistory.lastRepairStartTime > referenceTimestamp)
+                {
+                    rst = autoRepairHistory;
+                    referenceTimestamp = autoRepairHistory.lastRepairStartTime;
+                }
             }
         }
         return rst;
@@ -487,7 +513,7 @@ public class AutoRepairUtils
     }
 
     @VisibleForTesting
-    public static RepairTurn myTurnToRunRepair(RepairType repairType, UUID myId)
+    public static Pair<RepairTurn, UUID> myTurnToRunRepair(RepairType repairType, UUID myId)
     {
         try
         {
@@ -554,13 +580,19 @@ public class AutoRepairUtils
                 {
                     if (history.forceRepair && history.hostId.equals(myId))
                     {
-                        return MY_TURN_FORCE_REPAIR;
+                        return Pair.create(MY_TURN_FORCE_REPAIR, null);
                     }
                 }
             }
 
+            if (currentRepairStatus.proxyHostsToTokenRange.containsKey(myId))
+            {
+                logger.info("I am a proxy for repair for {}", currentRepairStatus.proxyHostsToTokenRange.get(myId));
+                return Pair.create(RepairTurn.MY_TURN_REPAIR_PROXY, currentRepairStatus.proxyHostsToTokenRange.get(myId));
+            }
+
             int parallelRepairNumber = getMaxNumberOfNodeRunAutoRepair(repairType,
-                                                                              autoRepairHistories == null ? 0 : autoRepairHistories.size());
+                                                                       autoRepairHistories == null ? 0 : autoRepairHistories.size());
             logger.info("Will run repairs concurrently on {} node(s)", parallelRepairNumber);
 
             if (currentRepairStatus == null || parallelRepairNumber > currentRepairStatus.hostIdsWithOnGoingRepair.size())
@@ -579,7 +611,7 @@ public class AutoRepairUtils
                     if (autoRepairHistories == null || currentRepairStatus == null)
                     {
                         logger.error("No record found");
-                        return NOT_MY_TURN;
+                        return Pair.create(NOT_MY_TURN, null);
                     }
                 }
 
@@ -606,36 +638,36 @@ public class AutoRepairUtils
                 {
                     logger.info("Priority list is not empty and I'm not the first node in the list, not my turn." +
                                 "First node in priority list is {}", ClusterMetadata.current().directory.addresses.get(NodeId.fromUUID(priorityHostId)));
-                    return NOT_MY_TURN;
+                    return Pair.create(NOT_MY_TURN, null);
                 }
 
                 if (myId.equals(priorityHostId))
                 {
                     //I have a priority for repair hence its my turn now
-                    return MY_TURN_DUE_TO_PRIORITY;
+                    return Pair.create(MY_TURN_DUE_TO_PRIORITY, null);
                 }
 
                 // get the longest unrepaired node from the nodes which are not running repair
-                AutoRepairHistory defaultNodeToBeRepaired = getHostWithLongestUnrepairTime(currentRepairStatus.historiesWithoutOnGoingRepair);
+                AutoRepairHistory defaultNodeToBeRepaired = getHostWithUnrepairTime(currentRepairStatus.historiesWithoutOnGoingRepair, true);
                 //check who is next, which is helpful for debugging
                 logger.info("Next node to be repaired for repair type {} by default: {}", repairType, defaultNodeToBeRepaired);
                 if (defaultNodeToBeRepaired != null && defaultNodeToBeRepaired.hostId.equals(myId))
                 {
-                    return MY_TURN;
+                    return Pair.create(MY_TURN, null);
                 }
             }
             else if (currentRepairStatus.hostIdsWithOnGoingForceRepair.contains(myId))
             {
-                return MY_TURN_FORCE_REPAIR;
+                return Pair.create(MY_TURN_FORCE_REPAIR, null);
             }
             // for some reason I was not done with the repair hence resume (maybe node restart in-between, etc.)
-            return currentRepairStatus.hostIdsWithOnGoingRepair.contains(myId) ? MY_TURN : NOT_MY_TURN;
+            return currentRepairStatus.hostIdsWithOnGoingRepair.contains(myId) ? Pair.create(MY_TURN, null) : Pair.create(NOT_MY_TURN, null);
         }
         catch (Exception e)
         {
             logger.error("Exception while deciding node's turn:", e);
         }
-        return NOT_MY_TURN;
+        return Pair.create(NOT_MY_TURN, null);
     }
 
     static void deleteAutoRepairHistory(RepairType repairType, UUID hostId)
@@ -780,6 +812,28 @@ public class AutoRepairUtils
         return Collections.emptySet();
     }
 
+    public static Map<UUID, UUID> getRepairProxy(RepairType repairType)
+    {
+        UntypedResultSet repairPriorityResult;
+
+        ResultMessage.Rows repairPriorityRows = selectStatementRepairPriority.execute(QueryState.forInternalCalls(),
+                                                                                      QueryOptions.forInternalCalls(internalQueryCL, Lists.newArrayList(ByteBufferUtil.bytes(repairType.toString()))), Dispatcher.RequestTime.forImmediateExecution());
+        repairPriorityResult = UntypedResultSet.create(repairPriorityRows.result);
+
+        Map<UUID, UUID> repairProxy = null;
+        if (repairPriorityResult.size() > 0)
+        {
+            // there should be only one row
+            UntypedResultSet.Row row = repairPriorityResult.one();
+            repairProxy = row.getMap(COL_REPAIR_PROXY, UUIDType.instance, UUIDType.instance);
+        }
+        if (repairProxy != null)
+        {
+            return repairProxy;
+        }
+        return Collections.emptyMap();
+    }
+
     public static Set<InetAddressAndPort> getPriorityHosts(RepairType repairType)
     {
         Set<InetAddressAndPort> hosts = new HashSet<>();
@@ -873,5 +927,20 @@ public class AutoRepairUtils
             ranges = splitter.get().split(Collections.singleton(tokenRange), numberOfSplits);
         }
         return ranges;
+    }
+
+    public static void setRepairProxy(RepairType repairType, InetAddressAndPort host)
+    {
+        UUID tokenRangesToBeRepairedFor = ClusterMetadata.current().directory.hostId(ClusterMetadata.current().directory.peerId(host));
+        List<AutoRepairHistory> autoRepairHistories = getAutoRepairHistory(repairType);
+        CurrentRepairStatus currentRepairStatus = getCurrentRepairStatus(repairType, autoRepairHistories);
+        AutoRepairHistory defaultNodeToBeRepaired = getHostWithUnrepairTime(currentRepairStatus.historiesWithoutOnGoingRepair, false);
+
+        UUID theProxyNode = defaultNodeToBeRepaired.hostId;
+        addProxyRepairHost.execute(QueryState.forInternalCalls(),
+                                   QueryOptions.forInternalCalls(internalQueryCL,
+                                                                 Lists.newArrayList(UUIDSerializer.instance.serialize(theProxyNode), UUIDSerializer.instance.serialize(tokenRangesToBeRepairedFor),
+                                                                                    ByteBufferUtil.bytes(repairType.toString()))),
+                                   Dispatcher.RequestTime.forImmediateExecution());
     }
 }

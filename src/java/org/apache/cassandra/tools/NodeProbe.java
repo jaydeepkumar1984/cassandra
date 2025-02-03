@@ -2633,6 +2633,11 @@ public class NodeProbe implements AutoCloseable
     {
         return autoRepairProxy.getOnGoingRepairHostIds(repairType);
     }
+
+    public void setRepairProxy(String repairType, String host)
+    {
+        autoRepairProxy.setRepairProxy(repairType, host);
+    }
 }
 
 class ColumnFamilyStoreMBeanIterator implements Iterator<Map.Entry<String, ColumnFamilyStoreMBean>>

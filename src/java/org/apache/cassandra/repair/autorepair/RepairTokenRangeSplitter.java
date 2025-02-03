@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -268,7 +269,7 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
     }
 
     @Override
-    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans)
+    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, UUID proxyId)
     {
         return new BytesBasedRepairAssignmentIterator(primaryRangeOnly, repairPlans);
     }

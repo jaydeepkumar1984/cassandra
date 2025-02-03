@@ -234,7 +234,7 @@ public class AutoRepairService implements AutoRepairServiceMBean
             return Collections.emptySet();
         }
         Set<String> hostIds = new HashSet<>();
-        AutoRepairUtils.CurrentRepairStatus currentRepairStatus = new AutoRepairUtils.CurrentRepairStatus(histories, AutoRepairUtils.getPriorityHostIds(RepairType.parse(repairType)));
+        AutoRepairUtils.CurrentRepairStatus currentRepairStatus = new AutoRepairUtils.CurrentRepairStatus(histories, AutoRepairUtils.getPriorityHostIds(RepairType.parse(repairType)), null);
         for (UUID id : currentRepairStatus.hostIdsWithOnGoingRepair)
         {
             hostIds.add(id.toString());
@@ -250,6 +250,15 @@ public class AutoRepairService implements AutoRepairServiceMBean
     public void setAutoRepairTokenRangeSplitterParameter(String repairType, String key, String value)
     {
         config.getTokenRangeSplitterInstance(RepairType.parse(repairType)).setParameter(key, value);
+    }
+
+    public void setRepairProxy(String repairType, String host)
+    {
+        Set<InetAddressAndPort> hosts = InetAddressAndPort.parseHosts(host, false);
+        if (!hosts.isEmpty())
+        {
+            AutoRepairUtils.setRepairProxy(RepairType.parse(repairType), hosts.iterator().next());
+        }
     }
 
     private String formatRepairTypeConfig(RepairType repairType, AutoRepairConfig config)

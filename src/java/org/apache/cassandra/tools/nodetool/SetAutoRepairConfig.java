@@ -43,7 +43,7 @@ public class SetAutoRepairConfig extends NodeToolCmd
     description = "autorepair param and value.\nPossible autorepair parameters are as following: " +
                   "[start_scheduler|number_of_repair_threads|min_repair_interval|sstable_upper_threshold" +
                   "|enabled|table_max_repair_time|priority_hosts|forcerepair_hosts|ignore_dcs" +
-                  "|history_clear_delete_hosts_buffer_interval|repair_primary_token_range_only" +
+                  "|history_clear_delete_hosts_buffer_interval|repair_primary_token_range_only|repair_proxy" +
                   "|parallel_repair_count|parallel_repair_percentage|materialized_view_repair_enabled|repair_max_retries" +
                   "|repair_retry_backoff|repair_session_timeout|min_repair_task_duration|token_range_splitter.<property>]",
     required = true)
@@ -155,6 +155,9 @@ public class SetAutoRepairConfig extends NodeToolCmd
                 break;
             case "repair_session_timeout":
                 probe.setRepairSessionTimeout(repairTypeStr, paramVal);
+                break;
+            case "repair_proxy":
+                probe.setRepairProxy(repairTypeStr, paramVal);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown parameter: " + paramType);

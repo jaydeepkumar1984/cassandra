@@ -56,12 +56,14 @@ import org.apache.cassandra.schema.Tables;
 import org.apache.cassandra.service.AutoRepairService;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn;
+import org.apache.cassandra.utils.Pair;
 import org.apache.cassandra.utils.concurrent.Future;
 
 import static org.apache.cassandra.concurrent.ExecutorFactory.Global.executorFactory;
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN;
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_DUE_TO_PRIORITY;
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_FORCE_REPAIR;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN_REPAIR_PROXY;
 
 public class AutoRepair
 {
@@ -170,8 +172,9 @@ public class AutoRepair
 
             //consistency level to use for local query
             UUID myId = StorageService.instance.getHostIdForEndpoint(FBUtilities.getBroadcastAddressAndPort());
-            RepairTurn turn = AutoRepairUtils.myTurnToRunRepair(repairType, myId);
-            if (turn == MY_TURN || turn == MY_TURN_DUE_TO_PRIORITY || turn == MY_TURN_FORCE_REPAIR)
+            Pair<RepairTurn, UUID> ret = AutoRepairUtils.myTurnToRunRepair(repairType, myId);
+            RepairTurn turn = ret.left;
+            if (turn == MY_TURN || turn == MY_TURN_DUE_TO_PRIORITY || turn == MY_TURN_FORCE_REPAIR || turn == MY_TURN_REPAIR_PROXY)
             {
                 repairState.recordTurn(turn);
                 // For normal auto repair, we will use primary range only repairs (Repair with -pr option).
@@ -180,7 +183,11 @@ public class AutoRepair
                 // When doing force repair, we want to repair without -pr.
                 boolean primaryRangeOnly = config.getRepairPrimaryTokenRangeOnly(repairType)
                                            && turn != MY_TURN_FORCE_REPAIR;
-                if (tooSoonToRunRepair(repairType, repairState, config, myId))
+                if (turn == MY_TURN_FORCE_REPAIR)
+                {
+                    primaryRangeOnly = true;
+                }
+                if (turn != MY_TURN_REPAIR_PROXY && tooSoonToRunRepair(repairType, repairState, config, myId))
                 {
                     return;
                 }
@@ -215,7 +222,7 @@ public class AutoRepair
                 List<PrioritizedRepairPlan> repairPlans = PrioritizedRepairPlan.build(keyspacesAndTablesToRepair, repairType, shuffleFunc);
 
                 // calculate the repair assignments for each priority:keyspace.
-                Iterator<KeyspaceRepairAssignments> repairAssignmentsIterator = config.getTokenRangeSplitterInstance(repairType).getRepairAssignments(primaryRangeOnly, repairPlans);
+                Iterator<KeyspaceRepairAssignments> repairAssignmentsIterator = config.getTokenRangeSplitterInstance(repairType).getRepairAssignments(primaryRangeOnly, repairPlans, ret.right);
 
                 while (repairAssignmentsIterator.hasNext())
                 {

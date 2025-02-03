@@ -180,6 +180,7 @@ public final class SystemDistributedKeyspace
     public static final String AUTO_REPAIR_PRIORITY_CQL =  "CREATE TABLE IF NOT EXISTS %s ("
                             + "repair_type text,"
                             + "repair_priority set<uuid>,"
+                            + "repair_proxy map<uuid,uuid>,"
                             + "PRIMARY KEY (repair_type))";
 
     private static final TableMetadata AutoRepairPriorityTable =

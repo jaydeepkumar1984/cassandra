@@ -24,10 +24,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.AutoRepairService;
 
 import org.apache.cassandra.dht.Range;
@@ -68,19 +70,19 @@ public class FixedSplitTokenRangeSplitter implements IAutoRepairTokenRangeSplitt
     }
 
     @Override
-    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans)
+    public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, UUID proxyId)
     {
         return new RepairAssignmentIterator(repairPlans) {
 
             @Override
             protected KeyspaceRepairAssignments next(int priority, KeyspaceRepairPlan repairPlan)
             {
-                return getRepairAssignmentsForKeyspace(primaryRangeOnly, priority, repairPlan);
+                return getRepairAssignmentsForKeyspace(primaryRangeOnly, priority, repairPlan, proxyId);
             }
         };
     }
 
-    private KeyspaceRepairAssignments getRepairAssignmentsForKeyspace(boolean primaryRangeOnly, int priority, KeyspaceRepairPlan repairPlan)
+    private KeyspaceRepairAssignments getRepairAssignmentsForKeyspace(boolean primaryRangeOnly, int priority, KeyspaceRepairPlan repairPlan, UUID proxyId)
     {
         AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
         List<RepairAssignment> repairAssignments = new ArrayList<>();
@@ -88,6 +90,11 @@ public class FixedSplitTokenRangeSplitter implements IAutoRepairTokenRangeSplitt
         List<String> tableNames = repairPlan.getTableNames();
 
         Collection<Range<Token>> tokens = StorageService.instance.getPrimaryRanges(keyspaceName);
+        if (proxyId != null)
+        {
+            InetAddressAndPort endPoint = StorageService.instance.getEndpointForHostId(proxyId);
+            tokens = StorageService.instance.getPrimaryRangesForEndpoint(keyspaceName, endPoint);
+        }
         if (!primaryRangeOnly)
         {
             // if we need to repair non-primary token ranges, then change the tokens accordingly

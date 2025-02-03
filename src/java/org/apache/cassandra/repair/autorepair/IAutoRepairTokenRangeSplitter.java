@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.cassandra.config.ParameterizedClass;
 
@@ -47,7 +48,7 @@ public interface IAutoRepairTokenRangeSplitter
      * The iterator is traversed lazily {@link KeyspaceRepairAssignments} at a time with the intent to try to get the
      * most up-to-date representation of your data (e.g. how much data exists and is unrepaired at a given time).
      */
-    Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans);
+    Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, UUID proxyId);
 
     /**
      * Update a configuration parameter.  This is meant to be used by <code>nodetool setautorepairconfig</code> to
