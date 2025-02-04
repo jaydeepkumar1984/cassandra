@@ -44,6 +44,7 @@ public class AutoRepairMetrics
     public Counter repairTurnMyTurn;
     public Counter repairTurnMyTurnDueToPriority;
     public Counter repairTurnMyTurnForceRepair;
+    public Counter repairTurnMyTurnRepairProxy;
     public Gauge<Integer> totalMVTablesConsideredForRepair;
     public Gauge<Integer> totalDisabledRepairTables;
 
@@ -119,6 +120,7 @@ public class AutoRepairMetrics
         repairTurnMyTurn = Metrics.counter(factory.createMetricName("RepairTurnMyTurn"));
         repairTurnMyTurnDueToPriority = Metrics.counter(factory.createMetricName("RepairTurnMyTurnDueToPriority"));
         repairTurnMyTurnForceRepair = Metrics.counter(factory.createMetricName("RepairTurnMyTurnForceRepair"));
+        repairTurnMyTurnRepairProxy = Metrics.counter(factory.createMetricName("RepairTurnMyTurnRepairProxy"));
 
         totalMVTablesConsideredForRepair = Metrics.register(factory.createMetricName("TotalMVTablesConsideredForRepair"), new Gauge<Integer>()
         {
@@ -149,6 +151,9 @@ public class AutoRepairMetrics
                 break;
             case MY_TURN_DUE_TO_PRIORITY:
                 repairTurnMyTurnDueToPriority.inc();
+                break;
+            case MY_TURN_REPAIR_PROXY:
+                repairTurnMyTurnRepairProxy.inc();
                 break;
             default:
                 throw new RuntimeException(String.format("Unrecoginized turn: %s", turn.name()));
