@@ -271,7 +271,7 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
     @Override
     public Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, UUID proxyId)
     {
-        return new BytesBasedRepairAssignmentIterator(primaryRangeOnly, repairPlans);
+        return new BytesBasedRepairAssignmentIterator(primaryRangeOnly, repairPlans, proxyId);
     }
 
     /**
@@ -283,10 +283,13 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
         private final boolean primaryRangeOnly;
         private long bytesSoFar = 0;
 
-        BytesBasedRepairAssignmentIterator(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans)
+        private UUID proxyId;
+
+        BytesBasedRepairAssignmentIterator(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, UUID proxyId)
         {
             super(repairPlans);
             this.primaryRangeOnly = primaryRangeOnly;
+            this.proxyId = proxyId;
         }
 
         @Override
@@ -300,7 +303,7 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
                 return new KeyspaceRepairAssignments(priority, repairPlan.getKeyspaceName(), Collections.emptyList());
             }
 
-            Collection<Range<Token>> tokenRanges = getTokenRanges(primaryRangeOnly, repairPlan.getKeyspaceName());
+            Collection<Range<Token>> tokenRanges = getTokenRanges(primaryRangeOnly, repairPlan.getKeyspaceName(), proxyId);
             List<SizedRepairAssignment> repairAssignments = getRepairAssignmentsForKeyspace(repairType, repairPlan.getKeyspaceName(), repairPlan.getTableNames(), tokenRanges);
             FilteredRepairAssignments filteredRepairAssignments = filterRepairAssignments(priority, repairPlan.getKeyspaceName(), repairAssignments, bytesSoFar);
             bytesSoFar = filteredRepairAssignments.newBytesSoFar;
@@ -637,13 +640,13 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
         return splits;
     }
 
-    private Collection<Range<Token>> getTokenRanges(boolean primaryRangeOnly, String keyspaceName)
+    private Collection<Range<Token>> getTokenRanges(boolean primaryRangeOnly, String keyspaceName, UUID proxyId)
     {
         // Collect all applicable token ranges
         Collection<Range<Token>> wrappedRanges;
         if (primaryRangeOnly)
         {
-            wrappedRanges = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, FBUtilities.getBroadcastAddressAndPort());
+            wrappedRanges = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, proxyId == null ? FBUtilities.getBroadcastAddressAndPort() : StorageService.instance.getEndpointForHostId(proxyId));
         }
         else
         {
