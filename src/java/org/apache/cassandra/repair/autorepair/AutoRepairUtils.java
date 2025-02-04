@@ -114,6 +114,11 @@ public class AutoRepairUtils
     final static String DEL_REPAIR_PRIORITY = String.format(
     "DELETE %s[?] FROM %s.%s WHERE %s = ?", COL_REPAIR_PRIORITY, SchemaConstants.DISTRIBUTED_KEYSPACE_NAME,
     SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY, COL_REPAIR_TYPE);
+
+    final static String DEL_REPAIR_PROXY = String.format(
+    "DELETE %s[?] FROM %s.%s WHERE %s = ?", COL_REPAIR_PROXY, SchemaConstants.DISTRIBUTED_KEYSPACE_NAME,
+    SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY, COL_REPAIR_TYPE);
+
     final static String ADD_PRIORITY_HOST = String.format(
     "UPDATE %s.%s SET %s = %s + ?  WHERE %s = ?", SchemaConstants.DISTRIBUTED_KEYSPACE_NAME,
     SystemDistributedKeyspace.AUTO_REPAIR_PRIORITY, COL_REPAIR_PRIORITY, COL_REPAIR_PRIORITY, COL_REPAIR_TYPE);
@@ -164,6 +169,7 @@ public class AutoRepairUtils
     static ModificationStatement delStatementRepairHistory;
     static SelectStatement selectStatementRepairHistory;
     static ModificationStatement delStatementPriorityStatus;
+    static ModificationStatement delStatementRepairProxy;
     static SelectStatement selectStatementRepairPriority;
     static SelectStatement selectLastRepairTimeForNode;
     static ModificationStatement addPriorityHost;
@@ -196,6 +202,8 @@ public class AutoRepairUtils
                                                                                                                       .forInternalCalls());
 
         delStatementPriorityStatus = (ModificationStatement) QueryProcessor.getStatement(DEL_REPAIR_PRIORITY, ClientState
+                                                                                                              .forInternalCalls());
+        delStatementRepairProxy = (ModificationStatement) QueryProcessor.getStatement(DEL_REPAIR_PROXY, ClientState
                                                                                                               .forInternalCalls());
         addPriorityHost = (ModificationStatement) QueryProcessor.getStatement(ADD_PRIORITY_HOST, ClientState
                                                                                                  .forInternalCalls());
@@ -585,7 +593,7 @@ public class AutoRepairUtils
                 }
             }
 
-            if (currentRepairStatus.proxyHostsToTokenRange.containsKey(myId))
+            if (currentRepairStatus.proxyHostsToTokenRange != null && currentRepairStatus.proxyHostsToTokenRange.containsKey(myId))
             {
                 logger.info("I am a proxy for repair for {}", currentRepairStatus.proxyHostsToTokenRange.get(myId));
                 return Pair.create(RepairTurn.MY_TURN_REPAIR_PROXY, currentRepairStatus.proxyHostsToTokenRange.get(myId));
@@ -789,6 +797,17 @@ public class AutoRepairUtils
                                                                                             ByteBufferUtil.bytes(repairType.toString()))),
                                            Dispatcher.RequestTime.forImmediateExecution());
     }
+
+    static void removeRepairProxy(RepairType repairType, UUID hostId)
+    {
+        logger.info("Remove host {} from proxy list", hostId);
+        delStatementRepairProxy.execute(QueryState.forInternalCalls(),
+                                           QueryOptions.forInternalCalls(internalQueryCL,
+                                                                         Lists.newArrayList(ByteBufferUtil.bytes(hostId),
+                                                                                            ByteBufferUtil.bytes(repairType.toString()))),
+                                           Dispatcher.RequestTime.forImmediateExecution());
+    }
+
 
     public static Set<UUID> getPriorityHostIds(RepairType repairType)
     {

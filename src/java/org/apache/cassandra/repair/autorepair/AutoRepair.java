@@ -195,7 +195,10 @@ public class AutoRepair
                 long startTime = timeFunc.get();
                 logger.info("My host id: {}, my turn to run repair...repair primary-ranges only? {}", myId,
                             config.getRepairPrimaryTokenRangeOnly(repairType));
-                AutoRepairUtils.updateStartAutoRepairHistory(repairType, myId, timeFunc.get(), turn);
+                if (turn != MY_TURN_REPAIR_PROXY)
+                {
+                    AutoRepairUtils.updateStartAutoRepairHistory(repairType, myId, timeFunc.get(), turn);
+                }
 
                 repairState.setRepairKeyspaceCount(0);
                 repairState.setRepairInProgress(true);
@@ -236,6 +239,12 @@ public class AutoRepair
 
                     logger.info("Submitting repairs for priorityBucket={} for keyspace={} with assignmentCount={}", repairAssignments.getPriority(), repairAssignments.getKeyspaceName(), repairAssignments.getRepairAssignments().size());
                     repairKeyspace(repairType, primaryRangeOnly, repairAssignments.getKeyspaceName(), repairAssignments.getRepairAssignments(), collectedRepairStats);
+                }
+
+                if (turn == MY_TURN_REPAIR_PROXY)
+                {
+                    logger.info("Remove proxy host {} from priority list", myId);
+                    AutoRepairUtils.removeRepairProxy(repairType, myId);
                 }
 
                 cleanupAndUpdateStats(turn, repairType, repairState, myId, startTime, collectedRepairStats);
@@ -477,7 +486,10 @@ public class AutoRepair
             Thread.sleep(SLEEP_IF_REPAIR_FINISHES_QUICKLY.toMilliseconds());
         }
         repairState.setRepairInProgress(false);
-        AutoRepairUtils.updateFinishAutoRepairHistory(repairType, myId, timeFunc.get());
+        if (turn != MY_TURN_REPAIR_PROXY)
+        {
+            AutoRepairUtils.updateFinishAutoRepairHistory(repairType, myId, timeFunc.get());
+        }
     }
 
     public AutoRepairState getRepairState(AutoRepairConfig.RepairType repairType)
