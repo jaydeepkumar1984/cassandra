@@ -17,17 +17,12 @@
  */
 package org.apache.cassandra.repair.autorepair;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 import org.apache.cassandra.config.ParameterizedClass;
-import org.apache.cassandra.dht.Range;
-import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.locator.InetAddressAndPort;
 
 /**
  * Interface that defines how to generate {@link KeyspaceRepairAssignments}.
@@ -52,7 +47,7 @@ public interface IAutoRepairTokenRangeSplitter
      * The iterator is traversed lazily {@link KeyspaceRepairAssignments} at a time with the intent to try to get the
      * most up-to-date representation of your data (e.g. how much data exists and is unrepaired at a given time).
      */
-    Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans, InetAddressAndPort ep);
+    Iterator<KeyspaceRepairAssignments> getRepairAssignments(boolean primaryRangeOnly, List<PrioritizedRepairPlan> repairPlans);
 
     /**
      * Update a configuration parameter.  This is meant to be used by <code>nodetool setautorepairconfig</code> to

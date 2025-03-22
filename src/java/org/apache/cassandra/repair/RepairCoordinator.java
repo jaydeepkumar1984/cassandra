@@ -383,7 +383,6 @@ public class RepairCoordinator implements Runnable, ProgressEventNotifier, Repai
         Iterable<Range<Token>> keyspaceLocalRanges = getLocalReplicas.apply(state.keyspace).ranges();
         boolean isMeta = Keyspace.open(state.keyspace).getMetadata().params.replication.isMeta();
         boolean isCMS = ClusterMetadata.current().isCMSMember(FBUtilities.getBroadcastAddressAndPort());
-        logger.info("TEST123 keyspaceLocalRanges: {}", keyspaceLocalRanges);
         for (Range<Token> range : state.options.getRanges())
         {
             EndpointsForRange neighbors = ctx.repair().getNeighbors(state.keyspace, keyspaceLocalRanges, range,

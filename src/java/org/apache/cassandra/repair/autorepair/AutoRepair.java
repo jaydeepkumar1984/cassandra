@@ -20,7 +20,6 @@ package org.apache.cassandra.repair.autorepair;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,12 +37,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Uninterruptibles;
 
-import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.repair.RepairCoordinator;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.config.DurationSpec;
 import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.cassandra.tcm.compatibility.TokenRingUtils;
 import org.apache.cassandra.utils.Clock;
 
 import org.slf4j.Logger;
@@ -117,20 +114,6 @@ public class AutoRepair
             repairRunnableExecutors.put(repairType, executorFactory().scheduled(false, "AutoRepair-RepairRunnable-" + repairType.getConfigName(), Thread.NORM_PRIORITY));
             repairStates.put(repairType, AutoRepairConfig.RepairType.getAutoRepairState(repairType));
         }
-    }
-
-    public static Collection<Range<Token>> repairTokenCalculatorForEndpoint(Boolean primaryRangeOnly, String keyspaceName, InetAddressAndPort ep)
-    {
-        Collection<Range<Token>> tokenRanges;
-        if (primaryRangeOnly)
-        {
-            tokenRanges = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, ep);
-        }
-        else
-        {
-            tokenRanges = StorageService.instance.getReplicas(keyspaceName, ep).ranges();
-        }
-        return tokenRanges;
     }
 
     public void setup()
@@ -214,7 +197,61 @@ public class AutoRepair
             RepairTurn turn = AutoRepairUtils.myTurnToRunRepair(repairType, myId);
             if (turn == MY_TURN || turn == MY_TURN_DUE_TO_PRIORITY || turn == MY_TURN_FORCE_REPAIR)
             {
-                doOneRound(turn, myId, repairType, config, repairState, FBUtilities.getBroadcastAddressAndPort());
+                repairState.recordTurn(turn);
+                // For normal auto repair, we will use primary range only repairs (Repair with -pr option).
+                // For some cases, we may set the auto_repair_primary_token_range_only flag to false then we will do repair
+                // without -pr. We may also do force repair for certain node that we want to repair all the data on one node
+                // When doing force repair, we want to repair without -pr.
+                boolean primaryRangeOnly = config.getRepairPrimaryTokenRangeOnly(repairType)
+                                           && turn != MY_TURN_FORCE_REPAIR;
+
+                long startTime = timeFunc.get();
+                logger.info("My host id: {}, my turn to run repair...repair primary-ranges only? {}", myId,
+                            config.getRepairPrimaryTokenRangeOnly(repairType));
+                AutoRepairUtils.updateStartAutoRepairHistory(repairType, myId, timeFunc.get(), turn);
+
+                repairState.setRepairKeyspaceCount(0);
+                repairState.setRepairInProgress(true);
+                repairState.setTotalTablesConsideredForRepair(0);
+                repairState.setTotalMVTablesConsideredForRepair(0);
+
+                CollectedRepairStats collectedRepairStats = new CollectedRepairStats();
+
+                List<Keyspace> keyspaces = new ArrayList<>();
+                Keyspace.all().forEach(keyspaces::add);
+                // Filter out keyspaces and tables to repair and group into a map by keyspace.
+                Map<String, List<String>> keyspacesAndTablesToRepair = new LinkedHashMap<>();
+                for (Keyspace keyspace : keyspaces)
+                {
+                    if (!AutoRepairUtils.shouldConsiderKeyspace(keyspace))
+                    {
+                        continue;
+                    }
+                    List<String> tablesToBeRepairedList = retrieveTablesToBeRepaired(keyspace, config, repairType, repairState, collectedRepairStats);
+                    keyspacesAndTablesToRepair.put(keyspace.getName(), tablesToBeRepairedList);
+                }
+
+                // Separate out the keyspaces and tables to repair based on their priority, with each repair plan representing a uniquely occuring priority.
+                List<PrioritizedRepairPlan> repairPlans = PrioritizedRepairPlan.build(keyspacesAndTablesToRepair, repairType, shuffleFunc);
+
+                // calculate the repair assignments for each priority:keyspace.
+                Iterator<KeyspaceRepairAssignments> repairAssignmentsIterator = config.getTokenRangeSplitterInstance(repairType).getRepairAssignments(primaryRangeOnly, repairPlans);
+
+                while (repairAssignmentsIterator.hasNext())
+                {
+                    KeyspaceRepairAssignments repairAssignments = repairAssignmentsIterator.next();
+                    List<RepairAssignment> assignments = repairAssignments.getRepairAssignments();
+                    if (assignments.isEmpty())
+                    {
+                        logger.info("Skipping repairs for priorityBucket={} for keyspace={} since it yielded no assignments", repairAssignments.getPriority(), repairAssignments.getKeyspaceName());
+                        continue;
+                    }
+
+                    logger.info("Submitting repairs for priorityBucket={} for keyspace={} with assignmentCount={}", repairAssignments.getPriority(), repairAssignments.getKeyspaceName(), repairAssignments.getRepairAssignments().size());
+                    repairKeyspace(repairType, primaryRangeOnly, repairAssignments.getKeyspaceName(), repairAssignments.getRepairAssignments(), collectedRepairStats);
+                }
+
+                cleanupAndUpdateStats(turn, repairType, repairState, myId, startTime, collectedRepairStats);
             }
             else
             {
@@ -225,65 +262,6 @@ public class AutoRepair
         {
             logger.error("Exception in autorepair:", e);
         }
-    }
-
-    public void doOneRound(RepairTurn turn, UUID myId, AutoRepairConfig.RepairType repairType, AutoRepairConfig config, AutoRepairState repairState, InetAddressAndPort ep) throws InterruptedException
-    {
-        repairState.recordTurn(turn);
-        // For normal auto repair, we will use primary range only repairs (Repair with -pr option).
-        // For some cases, we may set the auto_repair_primary_token_range_only flag to false then we will do repair
-        // without -pr. We may also do force repair for certain node that we want to repair all the data on one node
-        // When doing force repair, we want to repair without -pr.
-        boolean primaryRangeOnly = config.getRepairPrimaryTokenRangeOnly(repairType)
-                                   && turn != MY_TURN_FORCE_REPAIR;
-
-        long startTime = timeFunc.get();
-        logger.info("My host id: {}, my turn to run repair...repair primary-ranges only? {}", myId,
-                    config.getRepairPrimaryTokenRangeOnly(repairType));
-        AutoRepairUtils.updateStartAutoRepairHistory(repairType, myId, timeFunc.get(), turn);
-
-        repairState.setRepairKeyspaceCount(0);
-        repairState.setRepairInProgress(true);
-        repairState.setTotalTablesConsideredForRepair(0);
-        repairState.setTotalMVTablesConsideredForRepair(0);
-
-        CollectedRepairStats collectedRepairStats = new CollectedRepairStats();
-
-        List<Keyspace> keyspaces = new ArrayList<>();
-        Keyspace.all().forEach(keyspaces::add);
-        // Filter out keyspaces and tables to repair and group into a map by keyspace.
-        Map<String, List<String>> keyspacesAndTablesToRepair = new LinkedHashMap<>();
-        for (Keyspace keyspace : keyspaces)
-        {
-            if (!AutoRepairUtils.shouldConsiderKeyspace(keyspace))
-            {
-                continue;
-            }
-            List<String> tablesToBeRepairedList = retrieveTablesToBeRepaired(keyspace, config, repairType, repairState, collectedRepairStats);
-            keyspacesAndTablesToRepair.put(keyspace.getName(), tablesToBeRepairedList);
-        }
-
-        // Separate out the keyspaces and tables to repair based on their priority, with each repair plan representing a uniquely occuring priority.
-        List<PrioritizedRepairPlan> repairPlans = PrioritizedRepairPlan.build(keyspacesAndTablesToRepair, repairType, shuffleFunc);
-
-        // calculate the repair assignments for each priority:keyspace.
-        Iterator<KeyspaceRepairAssignments> repairAssignmentsIterator = config.getTokenRangeSplitterInstance(repairType).getRepairAssignments(primaryRangeOnly, repairPlans, ep);
-
-        while (repairAssignmentsIterator.hasNext())
-        {
-            KeyspaceRepairAssignments repairAssignments = repairAssignmentsIterator.next();
-            List<RepairAssignment> assignments = repairAssignments.getRepairAssignments();
-            if (assignments.isEmpty())
-            {
-                logger.info("Skipping repairs for priorityBucket={} for keyspace={} since it yielded no assignments", repairAssignments.getPriority(), repairAssignments.getKeyspaceName());
-                continue;
-            }
-
-            logger.info("Submitting repairs for priorityBucket={} for keyspace={} with assignmentCount={}", repairAssignments.getPriority(), repairAssignments.getKeyspaceName(), repairAssignments.getRepairAssignments().size());
-            repairKeyspace(repairType, primaryRangeOnly, repairAssignments.getKeyspaceName(), repairAssignments.getRepairAssignments(), collectedRepairStats);
-        }
-
-        cleanupAndUpdateStats(turn, repairType, repairState, myId, startTime, collectedRepairStats);
     }
 
     private void repairKeyspace(AutoRepairConfig.RepairType repairType, boolean primaryRangeOnly, String keyspaceName, List<RepairAssignment> repairAssignments, CollectedRepairStats collectedRepairStats)
@@ -340,7 +318,6 @@ public class AutoRepair
                              tokenRange.right.toString());
 
                 ranges.add(curRepairAssignment.getTokenRange());
-
                 if ((totalProcessedAssignments % config.getRepairThreads(repairType) == 0) ||
                     (totalProcessedAssignments == totalRepairAssignments))
                 {
@@ -350,8 +327,8 @@ public class AutoRepair
                     while (retryCount <= config.getRepairMaxRetries(repairType))
                     {
                         RepairCoordinator task = repairState.getRepairRunnable(keyspaceName,
-                                                                               Lists.newArrayList(curRepairAssignment.getTableNames()),
-                                                                               ranges, primaryRangeOnly);
+                                                                            Lists.newArrayList(curRepairAssignment.getTableNames()),
+                                                                            ranges, primaryRangeOnly);
                         RepairProgressListener listener = new RepairProgressListener(repairType);
                         task.addProgressListener(listener);
                         f = repairRunnableExecutors.get(repairType).submit(task);

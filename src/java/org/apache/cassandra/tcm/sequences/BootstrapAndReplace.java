@@ -20,7 +20,6 @@ package org.apache.cassandra.tcm.sequences;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -31,14 +30,11 @@ import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.agrona.concurrent.SleepingIdleStrategy;
 import org.apache.cassandra.config.CassandraRelevantProperties;
 import org.apache.cassandra.db.ColumnFamilyStore;
 import org.apache.cassandra.db.SystemKeyspace;
 import org.apache.cassandra.db.TypeSizes;
 import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.Murmur3Partitioner;
-import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.gms.ApplicationState;
 import org.apache.cassandra.gms.Gossiper;
@@ -47,13 +43,9 @@ import org.apache.cassandra.io.util.DataInputPlus;
 import org.apache.cassandra.io.util.DataOutputPlus;
 import org.apache.cassandra.locator.EndpointsByReplica;
 import org.apache.cassandra.locator.InetAddressAndPort;
-import org.apache.cassandra.repair.RepairCoordinator;
-import org.apache.cassandra.repair.RepairParallelism;
 import org.apache.cassandra.repair.autorepair.AutoRepairUtils;
-import org.apache.cassandra.repair.messages.RepairOption;
 import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.streaming.PreviewKind;
 import org.apache.cassandra.tcm.ClusterMetadata;
 import org.apache.cassandra.tcm.ClusterMetadataService;
 import org.apache.cassandra.tcm.Epoch;
@@ -208,28 +200,6 @@ public class BootstrapAndReplace extends MultiStepOperation<Epoch>
                 try
                 {
                     ClusterMetadata metadata = ClusterMetadata.current();
-
-                    String keyspace = "ks";
-                    Collection<Range<Token>> localRanges = StorageService.instance.getLocalReplicas(keyspace).ranges();
-                    logger.info("TEST123: local ranges {}", localRanges);
-                    System.out.flush();
-
-                    Set<Range<Token>> ranges = new HashSet<>();
-                    Token st = new Murmur3Partitioner.LongToken(3074457345618258602L);
-                    Token et = new Murmur3Partitioner.LongToken(-9223372036854775808L);
-                    ranges.add(new Range<>(st, et));
-                    RepairOption option = new RepairOption(RepairParallelism.PARALLEL, true, false, false,
-                                                           1, ranges,
-                                                           !ranges.isEmpty(), false, true, PreviewKind.NONE, true, true, false, false, false);
-                    RepairCoordinator task = new RepairCoordinator(StorageService.instance, StorageService.nextRepairCommand.incrementAndGet(),
-                                                                   option, keyspace);
-
-                    logger.info("TEST123: run repair {}", localRanges);
-
-                    task.run();
-
-                    Thread.sleep(1000);
-                    System.exit(0);
 
                     if (streamData)
                     {

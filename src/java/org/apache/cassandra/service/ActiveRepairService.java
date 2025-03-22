@@ -562,7 +562,6 @@ public class ActiveRepairService implements IEndpointStateChangeSubscriber, IFai
         Range<Token> rangeSuperSet = null;
         for (Range<Token> range : keyspaceLocalRanges)
         {
-            logger.info("TEST123: range: " + range);
             if (range.contains(toRepair))
             {
                 rangeSuperSet = range;
@@ -581,8 +580,6 @@ public class ActiveRepairService implements IEndpointStateChangeSubscriber, IFai
 
         // same as withoutSelf(), but done this way for testing
         EndpointsForRange neighbors = replicaSets.get(rangeSuperSet).filter(r -> !ctx.broadcastAddressAndPort().equals(r.endpoint()));
-
-        logger.info("TEST123: neighbors: " + neighbors.toString());
 
         ClusterMetadata metadata = ClusterMetadata.current();
         if (dataCenters != null && !dataCenters.isEmpty())
