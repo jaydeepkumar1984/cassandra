@@ -131,8 +131,12 @@ public class AutoRepair
 
             for (AutoRepairConfig.RepairType repairType : AutoRepairConfig.RepairType.values())
             {
-                if (config.isAutoRepairEnabled(repairType))
-                    AutoRepairService.instance.checkCanRun(repairType);
+                if (config.isAutoRepairEnabled(repairType) &&
+                    !AutoRepairService.instance.checkCanRun(repairType))
+                {
+                    logger.info("Cannot run repair for repair type {}", repairType);
+                    continue;
+                }
 
                 repairExecutors.get(repairType).scheduleWithFixedDelay(
                 () -> repair(repairType),
@@ -194,7 +198,7 @@ public class AutoRepair
                 return;
             }
 
-            RepairTurn turn = AutoRepairUtils.myTurnToRunRepair(repairType, myId);
+            RepairTurn turn = repairState.calcRepairTurn(myId);
             if (turn == MY_TURN || turn == MY_TURN_DUE_TO_PRIORITY || turn == MY_TURN_FORCE_REPAIR)
             {
                 repairState.recordTurn(turn);
@@ -471,7 +475,6 @@ public class AutoRepair
         repairState.setSucceededTokenRangesCount(collectedRepairStats.succeededTokenRanges);
         repairState.setSkippedTokenRangesCount(collectedRepairStats.skippedTokenRanges);
         repairState.setSkippedTablesCount(collectedRepairStats.skippedTables);
-        repairState.setNodeRepairTimeInSec((int) TimeUnit.MILLISECONDS.toSeconds(timeFunc.get() - startTime));
         long timeInHours = TimeUnit.SECONDS.toHours(repairState.getNodeRepairTimeInSec());
         logger.info("Local {} repair time {} hour(s), stats: repairKeyspaceCount {}, " +
                     "repairTokenRangesSuccessCount {}, repairTokenRangesFailureCount {}, " +
@@ -493,6 +496,7 @@ public class AutoRepair
             logger.info("Wait for {} for repair type {}.", SLEEP_IF_REPAIR_FINISHES_QUICKLY, repairType);
             Thread.sleep(SLEEP_IF_REPAIR_FINISHES_QUICKLY.toMilliseconds());
         }
+        repairState.setNodeRepairTimeInSec((int) TimeUnit.MILLISECONDS.toSeconds(timeFunc.get() - startTime));
         repairState.setRepairInProgress(false);
         AutoRepairUtils.updateFinishAutoRepairHistory(repairType, myId, timeFunc.get());
     }

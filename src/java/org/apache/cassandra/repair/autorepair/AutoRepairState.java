@@ -43,9 +43,13 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.MY_TURN;
+import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.RepairTurn.NOT_MY_TURN;
 
 /**
  * AutoRepairState represents the state of automated repair for a given repair type.
@@ -94,6 +98,11 @@ public abstract class AutoRepairState
     }
 
     public abstract RepairCoordinator getRepairRunnable(String keyspace, List<String> tables, Set<Range<Token>> ranges, boolean primaryRangeOnly);
+
+    public AutoRepairUtils.RepairTurn calcRepairTurn(UUID myId)
+    {
+        return AutoRepairUtils.myTurnToRunRepair(repairType, myId);
+    }
 
     protected RepairCoordinator getRepairRunnable(String keyspace, RepairOption options)
     {
@@ -324,4 +333,35 @@ class FullRepairState extends AutoRepairState
 
         return getRepairRunnable(keyspace, option);
     }
+}
+
+class BootstrapRepairState extends AutoRepairState
+{
+    public BootstrapRepairState()
+    {
+        super(RepairType.BOOTSTRAP);
+    }
+
+    @Override
+    public RepairCoordinator getRepairRunnable(String keyspace, List<String> tables, Set<Range<Token>> ranges, boolean primaryRangeOnly)
+    {
+        // TODO: configuration to select between full or incremental repair here - for now going with full repair
+        RepairOption option = new RepairOption(RepairParallelism.PARALLEL, primaryRangeOnly, false, false,
+                                               AutoRepairService.instance.getAutoRepairConfig().getRepairThreads(repairType), ranges,
+                                               !ranges.isEmpty(), false, true, PreviewKind.NONE, true, true, false, false, false);
+
+        option.getColumnFamilies().addAll(tables);
+
+        return getRepairRunnable(keyspace, option);
+    }
+
+    public AutoRepairUtils.RepairTurn calcRepairTurn(UUID myId)
+    {
+        if (StorageService.instance.isBootstrapMode())
+        {
+            return MY_TURN;
+        }
+        return NOT_MY_TURN;
+    }
+
 }

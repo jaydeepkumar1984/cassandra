@@ -59,6 +59,7 @@ import org.apache.cassandra.repair.messages.ValidationResponse;
 import org.apache.cassandra.repair.state.SessionState;
 import org.apache.cassandra.schema.SystemDistributedKeyspace;
 import org.apache.cassandra.schema.TableId;
+import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.streaming.PreviewKind;
 import org.apache.cassandra.tracing.Tracing;
 import org.apache.cassandra.utils.FBUtilities;
@@ -276,7 +277,12 @@ public class RepairSession extends AsyncFuture<RepairSessionResult> implements I
     private String repairedNodes()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(ctx.broadcastAddressAndPort());
+        // if we are bootstrapping and running repair, i.e., most likely we are running on behalf of some other
+        // nodes. In that case, exclude ourselves from the list of nodes to repair
+        if (!StorageService.instance.isBootstrapMode())
+        {
+            sb.append(ctx.broadcastAddressAndPort());
+        }
         for (InetAddressAndPort ep : state.commonRange.endpoints)
             sb.append(", ").append(ep);
         return sb.toString();

@@ -19,7 +19,6 @@ package org.apache.cassandra.service;
 
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.ParameterizedClass;
-import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig;
 import org.apache.cassandra.repair.autorepair.AutoRepairConfig.RepairType;
@@ -35,12 +34,15 @@ import java.util.UUID;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implement all the MBeans for AutoRepair.
  */
 public class AutoRepairService implements AutoRepairServiceMBean
 {
+    private static final Logger logger = LoggerFactory.getLogger(AutoRepairService.class);
     public static final String MBEAN_NAME = "org.apache.cassandra.db:type=AutoRepairService";
 
     @VisibleForTesting
@@ -68,19 +70,33 @@ public class AutoRepairService implements AutoRepairServiceMBean
         checkCanRun(RepairType.parse(repairType));
     }
 
-    public void checkCanRun(RepairType repairType)
+    public boolean checkCanRun(RepairType repairType)
     {
         if (!config.isAutoRepairSchedulingEnabled())
-            throw new ConfigurationException("Auto-repair scheduller is disabled.");
+        {
+            logger.error("Auto-repair scheduller is disabled.");
+            return false;
+        }
 
-        if (repairType != RepairType.INCREMENTAL)
-            return;
-
-        if (config.getMaterializedViewRepairEnabled(repairType) && DatabaseDescriptor.isMaterializedViewsOnRepairEnabled())
-            throw new ConfigurationException("Cannot run incremental repair while materialized view replay is enabled. Set materialized_views_on_repair_enabled to false.");
-
-        if (DatabaseDescriptor.isCDCEnabled() && DatabaseDescriptor.isCDCOnRepairEnabled())
-            throw new ConfigurationException("Cannot run incremental repair while CDC replay is enabled. Set cdc_on_repair_enabled to false.");
+        if (repairType == RepairType.INCREMENTAL)
+        {
+            if (config.getMaterializedViewRepairEnabled(repairType) && DatabaseDescriptor.isMaterializedViewsOnRepairEnabled())
+            {
+                logger.error("Cannot run incremental repair while materialized view replay is enabled. Set materialized_views_on_repair_enabled to false.");
+                return false;
+            }
+            if (DatabaseDescriptor.isCDCEnabled() && DatabaseDescriptor.isCDCOnRepairEnabled())
+            {
+                logger.error("Cannot run incremental repair while CDC replay is enabled. Set cdc_on_repair_enabled to false.");
+                return false;
+            }
+        }
+        if (repairType == RepairType.BOOTSTRAP && !StorageService.instance.isBootstrapMode())
+        {
+            logger.info("Cannot run bootstrap repair when not in bootstrap mode.");
+            return false;
+        }
+        return true;
     }
 
     public AutoRepairConfig getAutoRepairConfig()
