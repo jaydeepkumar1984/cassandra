@@ -33,6 +33,7 @@ import com.google.common.util.concurrent.*;
 import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.schema.TableMetadata;
 import org.apache.cassandra.repair.state.JobState;
+import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.concurrent.AsyncFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,7 +124,12 @@ public class RepairJob extends AsyncFuture<RepairResult> implements Runnable
         ColumnFamilyStore cfs = ks.getColumnFamilyStore(desc.columnFamily);
         cfs.metric.repairsStarted.inc();
         List<InetAddressAndPort> allEndpoints = new ArrayList<>(session.state.commonRange.endpoints);
-        allEndpoints.add(ctx.broadcastAddressAndPort());
+        // if we are bootstrapping and running repair, i.e., most likely we are running on behalf of some other
+        // nodes. In that case, exclude ourselves from the list of nodes to repair
+        if (!StorageService.instance.isBootstrapMode())
+        {
+            allEndpoints.add(ctx.broadcastAddressAndPort());
+        }
 
         Future<Void> paxosRepair;
         if (paxosRepairEnabled() && (((useV2() || isMetadataKeyspace()) && session.repairPaxos) || session.paxosOnly))

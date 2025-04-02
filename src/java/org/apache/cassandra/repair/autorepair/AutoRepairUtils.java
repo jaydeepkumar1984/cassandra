@@ -17,6 +17,7 @@
  */
 package org.apache.cassandra.repair.autorepair;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,6 +71,7 @@ import org.apache.cassandra.locator.MetaStrategy;
 import org.apache.cassandra.locator.NetworkTopologyStrategy;
 import org.apache.cassandra.locator.RangesAtEndpoint;
 import org.apache.cassandra.locator.Replica;
+import org.apache.cassandra.metrics.AutoRepairMetrics;
 import org.apache.cassandra.metrics.AutoRepairMetricsManager;
 import org.apache.cassandra.schema.Schema;
 import org.apache.cassandra.schema.SchemaConstants;
@@ -1185,5 +1187,36 @@ public class AutoRepairUtils
             ranges = splitter.get().split(Collections.singleton(tokenRange), numberOfSplits);
         }
         return ranges;
+    }
+
+    // TODO: This API inside a thread to timebox the repair operation
+    public static void runBootstrapRepair(InetAddressAndPort nodeBeingReplaced) throws UnknownHostException, InterruptedException
+    {
+        // initialize config
+        AutoRepairService.setup();
+
+        if (!DatabaseDescriptor.getAutoRepairConfig().isAutoRepairSchedulingEnabled())
+        {
+            logger.info("Auto-repair scheduling is disabled");
+            return;
+        }
+        logger.info("Enabling auto-repair scheduling");
+        AutoRepair.instance.setup();
+
+        AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
+        if (config.isAutoRepairEnabled(RepairType.BOOTSTRAP))
+        {
+            config.setRepairEndpoint(AutoRepairConfig.RepairType.BOOTSTRAP, nodeBeingReplaced);
+
+            AutoRepairMetrics bootstrapRepairMetrics = AutoRepairMetricsManager.getMetrics(AutoRepairConfig.RepairType.BOOTSTRAP);
+            while (bootstrapRepairMetrics.nodeRepairTimeInSec.getValue().longValue() == 0)
+            {
+                Thread.sleep(5000);
+                logger.info("Waiting for bootstrap repair to complete one round");
+            }
+            logger.info("Bootstrap Repair has completed!");
+            // disable the boostrap repair because one round has already completed
+            config.setAutoRepairEnabled(AutoRepairConfig.RepairType.BOOTSTRAP, false);
+        }
     }
 }

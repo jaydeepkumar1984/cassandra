@@ -201,6 +201,7 @@ public class BootstrapAndReplace extends MultiStepOperation<Epoch>
                 {
                     ClusterMetadata metadata = ClusterMetadata.current();
 
+                    AutoRepairUtils.runBootstrapRepair(metadata.directory.endpoint(startReplace.replaced()));
                     if (streamData)
                     {
                         MovementMap movements = movementMap(metadata.directory.endpoint(startReplace.replaced()), startReplace.delta());

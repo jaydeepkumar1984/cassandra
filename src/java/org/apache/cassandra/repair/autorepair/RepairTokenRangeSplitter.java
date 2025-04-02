@@ -38,8 +38,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import org.apache.cassandra.tcm.compatibility.TokenRingUtils;
-import org.apache.cassandra.utils.FBUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +57,6 @@ import org.apache.cassandra.io.sstable.metadata.CompactionMetadata;
 import org.apache.cassandra.io.sstable.metadata.MetadataType;
 import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.service.AutoRepairService;
-import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.utils.concurrent.Refs;
 
 import static org.apache.cassandra.repair.autorepair.AutoRepairUtils.split;
@@ -153,6 +150,8 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
                                                                        .build());
         put(AutoRepairConfig.RepairType.PREVIEW_REPAIRED, RepairTypeDefaults.builder(AutoRepairConfig.RepairType.PREVIEW_REPAIRED)
                                                                             .build());
+        put(AutoRepairConfig.RepairType.BOOTSTRAP, RepairTypeDefaults.builder(AutoRepairConfig.RepairType.FULL)
+                                                                .build());
     }};
 
     public RepairTokenRangeSplitter(AutoRepairConfig.RepairType repairType, Map<String, String> parameters)
@@ -231,8 +230,9 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
             {
                 return new KeyspaceRepairAssignments(priority, repairPlan.getKeyspaceName(), Collections.emptyList());
             }
+            AutoRepairConfig config = AutoRepairService.instance.getAutoRepairConfig();
 
-            List<Range<Token>> tokenRanges = getTokenRanges(primaryRangeOnly, repairPlan.getKeyspaceName());
+            List<Range<Token>> tokenRanges = getTokenRangesForEndpoint(primaryRangeOnly, repairPlan.getKeyspaceName(), config.getRepairEndpoint(repairType));
             // shuffle token ranges to unbias selection of ranges
             Collections.shuffle(tokenRanges);
             List<SizedRepairAssignment> repairAssignments = new ArrayList<>();
@@ -577,28 +577,6 @@ public class RepairTokenRangeSplitter implements IAutoRepairTokenRangeSplitter
                     FileUtils.stringifyFileSize(approximateBytesPerSplit), approximatePartitionsPerSplit
         );
         return splits;
-    }
-
-    private List<Range<Token>> getTokenRanges(boolean primaryRangeOnly, String keyspaceName)
-    {
-        // Collect all applicable token ranges
-        Collection<Range<Token>> wrappedRanges;
-        if (primaryRangeOnly)
-        {
-            wrappedRanges = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, FBUtilities.getBroadcastAddressAndPort());
-        }
-        else
-        {
-            wrappedRanges = StorageService.instance.getLocalRanges(keyspaceName);
-        }
-
-        // Unwrap each range as we need to account for ranges that overlap the ring
-        List<Range<Token>> ranges = new ArrayList<>();
-        for (Range<Token> wrappedRange : wrappedRanges)
-        {
-            ranges.addAll(wrappedRange.unwrap());
-        }
-        return ranges;
     }
 
     private List<SizeEstimate> getRangeSizeEstimate(String keyspace, String table, Range<Token> tokenRange)

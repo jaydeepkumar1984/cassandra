@@ -576,7 +576,18 @@ public class ActiveRepairService implements IEndpointStateChangeSubscriber, IFai
             }
         }
         if (rangeSuperSet == null || !replicaSets.containsKey(rangeSuperSet))
-            return EndpointsForRange.empty(toRepair);
+        {
+            // if we are bootstrapping and running repair, i.e., most likely we are running on behalf of some other
+            // nodes. In that case, self ownership is none, hence add the entire range as is
+            if (StorageService.instance.isBootstrapMode())
+            {
+                rangeSuperSet = toRepair;
+            }
+            else
+            {
+                return EndpointsForRange.empty(toRepair);
+            }
+        }
 
         // same as withoutSelf(), but done this way for testing
         EndpointsForRange neighbors = replicaSets.get(rangeSuperSet).filter(r -> !ctx.broadcastAddressAndPort().equals(r.endpoint()));

@@ -17,12 +17,21 @@
  */
 package org.apache.cassandra.repair.autorepair;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.cassandra.config.ParameterizedClass;
+import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.locator.InetAddressAndPort;
+import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.tcm.compatibility.TokenRingUtils;
+
+import static org.apache.cassandra.utils.FBUtilities.getBroadcastAddressAndPort;
 
 /**
  * Interface that defines how to generate {@link KeyspaceRepairAssignments}.
@@ -67,5 +76,34 @@ public interface IAutoRepairTokenRangeSplitter
     default Map<String, String> getParameters()
     {
         return Collections.emptyMap();
+    }
+
+    default List<Range<Token>> getTokenRangesForEndpoint(boolean primaryRangeOnly, String keyspaceName, InetAddressAndPort ep)
+    {
+        if (ep == null)
+        {
+            // if the endpoint is not provided, use the local node as the endpoint to get the token ranges
+            // otherwise use the provided endpoint's token ranges as this node might just be executing
+            // repair on behalf of someone else, specifically for bootstrapping repair purposes.
+            ep = getBroadcastAddressAndPort();
+        }
+        // Collect all applicable token ranges
+        Collection<Range<Token>> wrappedRanges;
+        if (primaryRangeOnly)
+        {
+            wrappedRanges = TokenRingUtils.getPrimaryRangesForEndpoint(keyspaceName, ep);
+        }
+        else
+        {
+            wrappedRanges = StorageService.instance.getReplicas(keyspaceName, ep).ranges();
+        }
+
+        // Unwrap each range as we need to account for ranges that overlap the ring
+        List<Range<Token>> ranges = new ArrayList<>();
+        for (Range<Token> wrappedRange : wrappedRanges)
+        {
+            ranges.addAll(wrappedRange.unwrap());
+        }
+        return ranges;
     }
 }

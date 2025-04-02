@@ -19,6 +19,7 @@
 package org.apache.cassandra.repair.autorepair;
 
 import java.io.Serializable;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import com.google.common.collect.Maps;
 
 import org.apache.cassandra.config.DurationSpec;
 import org.apache.cassandra.config.ParameterizedClass;
+import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.utils.LocalizeString;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.utils.FBUtilities;
@@ -72,7 +74,8 @@ public class AutoRepairConfig implements Serializable
     {
         FULL,
         INCREMENTAL,
-        PREVIEW_REPAIRED;
+        PREVIEW_REPAIRED,
+        BOOTSTRAP;
 
         private final String configName;
 
@@ -100,6 +103,8 @@ public class AutoRepairConfig implements Serializable
                     return new IncrementalRepairState();
                 case PREVIEW_REPAIRED:
                     return new PreviewRepairedState();
+                case BOOTSTRAP:
+                    return new BootstrapRepairState();
             }
 
             throw new IllegalArgumentException("Invalid repair type: " + repairType);
@@ -376,6 +381,17 @@ public class AutoRepairConfig implements Serializable
         getOptions(repairType).repair_retry_backoff = new DurationSpec.LongSecondsBound(interval);
     }
 
+
+    public void setRepairEndpoint(RepairType repairType, InetAddressAndPort endpoint) throws UnknownHostException
+    {
+        getOptions(repairType).repair_endpoint = endpoint;
+    }
+
+    public InetAddressAndPort getRepairEndpoint(RepairType repairType)
+    {
+        return applyOverrides(repairType, opt -> opt.repair_endpoint);
+    }
+
     @VisibleForTesting
     static IAutoRepairTokenRangeSplitter newAutoRepairTokenRangeSplitter(RepairType repairType, ParameterizedClass parameterizedClass) throws ConfigurationException
     {
@@ -536,6 +552,8 @@ public class AutoRepairConfig implements Serializable
         public volatile Integer repair_max_retries = 3;
         // Backoff time before retrying a repair session.
         public volatile DurationSpec.LongSecondsBound repair_retry_backoff = new DurationSpec.LongSecondsBound("30s");
+
+        public volatile InetAddressAndPort repair_endpoint = null;
 
         public String toString()
         {
