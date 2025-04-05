@@ -17,29 +17,28 @@
  */
 package org.apache.cassandra.streaming;
 
+import org.apache.cassandra.config.DatabaseDescriptor;
+
 public enum StreamOperation
 {
-    OTHER("Other", true, false), // Fallback to avoid null types when deserializing from string
-    RESTORE_REPLICA_COUNT("Restore replica count", false, false), // Handles removeNode
-    DECOMMISSION("Unbootstrap", false, true),
-    RELOCATION("Relocation", false, true),
-    BOOTSTRAP("Bootstrap", false, true),
-    REBUILD("Rebuild", false, true),
-    BULK_LOAD("Bulk Load", true, false),
-    REPAIR("Repair", true, false);
+    OTHER("Other",  false), // Fallback to avoid null types when deserializing from string
+    RESTORE_REPLICA_COUNT("Restore replica count", false), // Handles removeNode
+    DECOMMISSION("Unbootstrap", true),
+    RELOCATION("Relocation", true),
+    BOOTSTRAP("Bootstrap", true),
+    REBUILD("Rebuild", true),
+    BULK_LOAD("Bulk Load", false),
+    REPAIR("Repair", false);
 
     private final String description;
-    private final boolean requiresViewBuild;
     private final boolean keepSSTableLevel;
 
     /**
      * @param description The operation description
-     * @param requiresViewBuild Whether this operation requires views to be updated if it involves a base table
      */
-    StreamOperation(String description, boolean requiresViewBuild, boolean keepSSTableLevel)
+    StreamOperation(String description, boolean keepSSTableLevel)
     {
         this.description = description;
-        this.requiresViewBuild = requiresViewBuild;
         this.keepSSTableLevel = keepSSTableLevel;
     }
 
@@ -60,11 +59,20 @@ public enum StreamOperation
     }
 
     /**
-     * Wether this operation requires views to be updated
+     * Whether this operation requires views to be updated if it involves a base table
      */
     public boolean requiresViewBuild()
     {
-        return this.requiresViewBuild;
+        switch (this)
+        {
+            case OTHER:
+            case BULK_LOAD:
+                return true;
+            case REPAIR:
+                return DatabaseDescriptor.isMaterializedViewsOnRepairEnabled();
+            default:
+                return false;
+        }
     }
 
     public boolean keepSSTableLevel()

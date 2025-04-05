@@ -197,7 +197,7 @@ public class CassandraStreamReceiver implements StreamReceiver
     {
         return cdcRequiresWriteCommitLog(cfs)
                || cfs.streamToMemtable()
-               || (session.streamOperation().requiresViewBuild() && hasViews(cfs) && DatabaseDescriptor.isMaterializedViewsOnRepairEnabled());
+               || (session.streamOperation().requiresViewBuild() && hasViews(cfs));
     }
 
     private void sendThroughWritePath(ColumnFamilyStore cfs, Collection<SSTableReader> readers)
