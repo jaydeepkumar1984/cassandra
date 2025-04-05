@@ -66,6 +66,23 @@ public class DisableFlag extends Guardrail
     }
 
     /**
+     * Checks whether this guardrail triggers on the provided {@link ClientState}.
+     * <p>
+     * Specifically, it evaluates the configured {@code disabled} predicate on
+     * the given state. If the predicate test succeeds, it indicates that the
+     * feature guarded by this guardrail should be considered disabled for that
+     * state.
+     *
+     * @param state The client state used to evaluate whether the guardrail triggers.
+     * @return {@code true} if this guardrail should be considered disabled for
+     *         the given state; {@code false} otherwise.
+     */
+    public boolean triggersOn(ClientState state)
+    {
+        return disabled.test(state);
+    }
+
+    /**
      * Aborts the operation if this guardrail is disabled.
      *
      * <p>This must be called when the feature guarded by this guardrail is used to ensure such use is in fact

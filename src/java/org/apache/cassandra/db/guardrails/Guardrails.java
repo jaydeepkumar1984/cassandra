@@ -33,6 +33,7 @@ import org.apache.cassandra.config.DataStorageSpec;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.GuardrailsOptions;
 import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.gms.Gossiper;
 import org.apache.cassandra.locator.InetAddressAndPort;
 import org.apache.cassandra.service.disk.usage.DiskUsageBroadcaster;
 import org.apache.cassandra.utils.MBeanWrapper;
@@ -321,6 +322,15 @@ public final class Guardrails implements GuardrailsMBean
     }
 
     /**
+     * Guardrail disabling repairs when there are mixed versions
+     */
+    public static final DisableFlag mixedRepairsEnabled =
+    new DisableFlag("mixed_version_repairs",
+                    state -> !CONFIG_PROVIDER.getOrCreate(state).getMixedVersionRepairsEnabled() &&
+                             Gossiper.instance.hasMultipleLiveVersions(),
+                    "Running repairs during mixed versions");
+
+    /**
      * Guardrail on the minimum replication factor.
      */
     public static final MinThreshold minimumReplicationFactor =
@@ -354,6 +364,18 @@ public final class Guardrails implements GuardrailsMBean
     public void setKeyspacesThreshold(int warn, int fail)
     {
         DEFAULT_CONFIG.setKeyspacesThreshold(warn, fail);
+    }
+
+    @Override
+    public boolean getMixedVersionRepairsEnabled()
+    {
+        return DEFAULT_CONFIG.getMixedVersionRepairsEnabled();
+    }
+
+    @Override
+    public void setMixedVersionRepairsEnabled(boolean enabled)
+    {
+        DEFAULT_CONFIG.setMixedVersionRepairsEnabled(enabled);
     }
 
     @Override
