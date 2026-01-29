@@ -120,7 +120,7 @@ public class HintedHandoffThrottleDynamicUpdateTest extends TestBaseImpl
             node1.nodetoolResult("sethintedhandoffthrottlekb", "1048576").asserts().success(); // 1 GiB/s
             assertEquals(1048576, node1.callOnInstance(DatabaseDescriptor::getHintedHandoffThrottleInKiB).intValue());
 
-            await().atMost(2, TimeUnit.MINUTES).until(() -> hintsSizeOn(node1, node3HostId) > 0);
+            await().atMost(2, TimeUnit.MINUTES).until(() -> hintsSizeOn(node1, node3HostId) == 0);
         }
     }
 }
